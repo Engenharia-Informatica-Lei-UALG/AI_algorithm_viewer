@@ -8,7 +8,7 @@ export default function JsonDocsPage() {
         <div className="min-h-screen bg-background p-6 md:p-12 font-sans max-w-4xl mx-auto">
             <header className="mb-12">
                 <Link
-                    href="/"
+                    href="/public"
                     className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-6 font-bold"
                 >
                     <ArrowLeft size={20} />
@@ -119,7 +119,7 @@ export default function JsonDocsPage() {
             </main>
 
             <footer className="mt-20 pt-8 border-t text-center text-muted-foreground text-sm pb-12">
-                © 2026 Algorithm AI Labs — Desenvolvido com foco em educação e IA.
+                Brandon Mejia — Desenvolvido com foco em educação e IA.
             </footer>
         </div>
     )
