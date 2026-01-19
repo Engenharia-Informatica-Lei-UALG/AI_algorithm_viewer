@@ -35,7 +35,7 @@ export interface TicTacToeAction extends Action {
 
 export class TicTacToe implements Problem<TicTacToeState, TicTacToeAction> {
   public initialState: TicTacToeState;
-  private maxPlayer: 'X' | 'O';
+  public maxPlayer: 'X' | 'O';
 
   constructor(initialBoard?: (string | null)[], maxPlayer: 'X' | 'O' = 'X') {
     const board = initialBoard || Array(9).fill(null);

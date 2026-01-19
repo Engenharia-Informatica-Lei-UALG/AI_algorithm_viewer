@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Group } from '@visx/group';
+import * as d3 from 'd3';
 import { Tree, hierarchy } from '@visx/hierarchy';
 import { LinkVertical } from '@visx/shape';
 import { Zoom } from '@visx/zoom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2, Repeat, Calculator, GitFork, Trophy, Eye } from 'lucide-react';
+import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2, Repeat, Calculator, GitFork, Trophy, Eye, Zap } from 'lucide-react';
 import { useGameStore } from '@/store/gameStore';
 import { CustomTreeNode, NodeShape } from '@/types/game';
 import { cn } from '@/lib/utils';
@@ -120,6 +121,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const hasChildren = currentNode.children && currentNode.children.length > 0;
   const isAdversarial = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
   const isGameProblem = problemType === 'tictactoe' || problemType === '8puzzle';
+  const showAlphaBeta = algorithm === 'minimax' || algorithm === 'alpha-beta';
   const isMCTS = algorithm === 'mcts';
 
   const handleAddChild = () => {
@@ -198,6 +200,25 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
           )}
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0"><X size={14} /></button>
         </div>
+
+        {/* SEÇÃO DE ESPECIFICAÇÕES ALPHA-BETA */}
+        {showAlphaBeta && mode === 'node' && (
+          <div className="p-2 bg-orange-500/5 rounded-md border border-orange-500/10 mb-1 space-y-2">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-orange-600">
+              <Zap size={12} /> Especificações Alpha-Beta
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+               <div className="bg-background p-1.5 rounded border flex flex-col">
+                <span className="text-[9px] text-muted-foreground uppercase font-bold">Alpha (α)</span>
+                <span className="font-mono font-bold text-blue-600">{currentNode.alpha === -Infinity ? '-∞' : currentNode.alpha}</span>
+              </div>
+              <div className="bg-background p-1.5 rounded border flex flex-col">
+                <span className="text-[9px] text-muted-foreground uppercase font-bold">Beta (β)</span>
+                <span className="font-mono font-bold text-red-600">{currentNode.beta === Infinity ? '∞' : currentNode.beta}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SEÇÃO DE ESPECIFICAÇÕES MCTS */}
         {isMCTS && mctsStats && mode === 'node' && (
@@ -332,20 +353,27 @@ interface TreeGraphProps {
 }
 
 export default function TreeGraph({ data, width, height, zoomResetTrigger }: TreeGraphProps) {
-  const { algorithm, maxNodeShape, minNodeShape, admissibilityViolations, nodeViewMode, problemType, updateNodeAttributes } = useGameStore();
+  const { algorithm, maxNodeShape, minNodeShape, admissibilityViolations, nodeViewMode, problemType, updateNodeAttributes, followActiveNode } = useGameStore();
 
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
   const zoomRef = useRef<any>(null);
 
-  const root = useMemo(() => hierarchy(data), [data]);
-
   const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
   const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
   const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
-  const treeWidth = Math.max(root.leaves().length * minNodeWidth, minNodeWidth);
-  const treeHeight = Math.max(root.height * minNodeHeight, minNodeHeight);
+
+  // Calculamos o layout manualmente para ter acesso às coordenadas (x, y) fora do JSX
+  const { layoutRoot, treeWidth, treeHeight } = useMemo(() => {
+    const h = hierarchy(data);
+    const tw = Math.max(h.leaves().length * minNodeWidth, minNodeWidth);
+    const th = Math.max(h.height * minNodeHeight, minNodeHeight);
+    const treeLayout = d3.tree<CustomTreeNode>()
+      .size([tw, th])
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1.5));
+    return { layoutRoot: treeLayout(h), treeWidth: tw, treeHeight: th };
+  }, [data, minNodeWidth, minNodeHeight]);
 
   useEffect(() => {
     if (zoomRef.current && width > 0 && height > 0) {
@@ -370,6 +398,18 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       });
     }
   }, [zoomResetTrigger, width, height, treeWidth, treeHeight]); // Recalcula se a largura mudar
+
+  // Lógica para seguir o nó ativo
+  useEffect(() => {
+    if (followActiveNode && zoomRef.current && width > 0 && height > 0) {
+      const activeNode = layoutRoot.descendants().find(d => (d.data as any).isCurrent);
+      if (activeNode) {
+        // translateTo centraliza o ponto (x, y) no viewport. 
+        // Somamos 50 devido ao offset do <Group top={50} left={50}>
+        zoomRef.current.translateTo({ x: activeNode.x + 50, y: activeNode.y + 50 });
+      }
+    }
+  }, [layoutRoot, followActiveNode, width, height]);
 
   const handleNodeClick = (e: React.MouseEvent, node: CustomTreeNode) => {
     e.stopPropagation();
@@ -409,8 +449,8 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     updateNodeAttributes(currentNode.id, { boardState: newBoard });
   };
 
-  const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs'].includes(algorithm);
-  const isAlphaBeta = algorithm === 'alpha-beta';
+  const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs', 'minimax', 'alpha-beta'].includes(algorithm);
+  const showAlphaBeta = algorithm === 'minimax' || algorithm === 'alpha-beta';
   const isMCTS = algorithm === 'mcts';
 
   const isRepeatedNode = (node: any) => {
@@ -433,7 +473,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
           <foreignObject x={-boardSize / 2} y={-boardSize / 2} width={boardSize} height={boardSize}>
             <div className={cn(
               "w-full h-full flex items-center justify-center rounded-xl border-2 transition-all duration-300 shadow-md p-1",
-              isCurrent ? "border-purple-500 bg-purple-500/5 ring-4 ring-purple-500/20" :
+              isCurrent ? "border-purple-600 bg-purple-100 dark:bg-purple-900/40 ring-4 ring-purple-500/30" :
                 isGoal ? "border-emerald-500 bg-emerald-500/5 ring-4 ring-emerald-500/20" :
                   isSelected ? "border-orange-500 bg-orange-500/5 shadow-orange-500/20" :
                     "border-border/60 bg-slate-50/50 dark:bg-slate-900/50",
@@ -482,16 +522,21 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
               </defs>
               <rect width={width} height={height} fill="url(#grid)" />
               <Group transform={zoom.toString()}>
-                <Tree root={root} size={[treeWidth, treeHeight]} separation={(a, b) => (a.parent === b.parent ? 1 : 1.5)}>
-                  {tree => (
-                    <Group top={50} left={50}>
-                      {tree.links().map((link, i) => {
+                <Group top={50} left={50}>
+                      {layoutRoot.links().map((link, i) => {
                         const targetData = link.target.data as CustomTreeNode;
                         const cost = targetData.costToParent;
                         const isPruned = targetData.isPruned;
                         return (
                           <Group key={`link-group-${i}`} opacity={isPruned ? 0.3 : 1}>
                             <LinkVertical data={link} stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={isPruned ? "5,5" : "none"} className="text-muted-foreground/30" />
+                            {/* Visualização de Corte (Linhas Vermelhas) */}
+                            {isPruned && (
+                              <Group top={(link.source.y + link.target.y) / 2} left={(link.source.x + link.target.x) / 2}>
+                                <line x1={-8} y1={-8} x2={8} y2={8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+                                <line x1={-8} y1={8} x2={8} y2={-8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+                              </Group>
+                            )}
                             {cost !== undefined && (
                               <Group className="cursor-pointer" onClick={(e) => handleEdgeClick(e, targetData)}>
                                 <rect x={(link.source.x + link.target.x) / 2 - 14} y={(link.source.y + link.target.y) / 2 - 14} width={28} height={28} rx={14} fill="currentColor" className="text-muted hover:text-accent transition-colors border border-border" />
@@ -501,14 +546,42 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                           </Group>
                         );
                       })}
-                      {tree.descendants().map((node, i) => {
+                      {layoutRoot.descendants().map((node, i) => {
                         const nodeData = node.data as CustomTreeNode & { isCurrent?: boolean };
                         const isSelected = selectedNode?.id === nodeData.id && menuMode === 'node';
                         const isVisited = nodeData.isVisited, isGoal = nodeData.isGoal, isCurrent = nodeData.isCurrent, isPruned = nodeData.isPruned, isRepeated = isRepeatedNode(node);
                         return (
                           <Group key={`node-${i}`} top={node.y} left={node.x} onClick={(e) => handleNodeClick(e, nodeData)} className="cursor-pointer" filter={isPruned ? undefined : "url(#shadow)"}>
                             {isGoal && !isPruned && <motion.circle r={36} fill="none" stroke="#22c55e" strokeWidth={3} strokeDasharray="4 4" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, rotate: 360 }} transition={{ rotate: { duration: 10, repeat: Infinity, ease: "linear" }, default: { duration: 0.3 } }} />}
-                            {isCurrent && <motion.circle r={34} fill="none" stroke="#a855f7" strokeWidth={4} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
+                            
+                            {isCurrent && (
+                              isGameMode ? (
+                                <motion.rect
+                                  x={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
+                                  y={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
+                                  width={(problemType === 'tictactoe' ? 120 : 100) + 8}
+                                  height={(problemType === 'tictactoe' ? 120 : 100) + 8}
+                                  rx={12}
+                                  fill="none"
+                                  stroke="#a855f7"
+                                  strokeWidth={4}
+                                  initial={{ scale: 0.95, opacity: 0 }}
+                                  animate={{ scale: [1, 1.05, 1], opacity: [0.5, 1, 0.5] }}
+                                  transition={{ duration: 1.5, repeat: Infinity }}
+                                />
+                              ) : (
+                                <motion.circle
+                                  r={34}
+                                  fill="none"
+                                  stroke="#a855f7"
+                                  strokeWidth={4}
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                                  transition={{ duration: 1.5, repeat: Infinity }}
+                                />
+                              )
+                            )}
+
                             {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
                             
                             {/* Nome do Nó */}
@@ -544,7 +617,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                                 </text>
                               </Group>
                             )}
-                            {isAlphaBeta && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
+                            {showAlphaBeta && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
                               <Group y={nodeViewMode === 'game' ? -85 : -50} x={0}>
                                 <rect x={-35} y={-10} width={70} height={20} rx={4} fill="currentColor" className="text-muted/90 border border-border" />
                                 <text dy=".33em" fontSize={9} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-foreground">α:{nodeData.alpha === -Infinity ? '-∞' : nodeData.alpha} β:{nodeData.beta === Infinity ? '∞' : nodeData.beta}</text>
@@ -554,8 +627,6 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                         );
                       })}
                     </Group>
-                  )}
-                </Tree>
               </Group>
             </svg>
           </div>

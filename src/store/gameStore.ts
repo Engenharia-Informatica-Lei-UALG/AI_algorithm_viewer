@@ -16,6 +16,7 @@ interface GameState {
   nodesExplored: number
   isSimulating: boolean
   resetTrigger: number
+  followActiveNode: boolean
 
   // Configurações Visuais e de Jogo
   maxNodeShape: NodeShape
@@ -44,6 +45,7 @@ interface GameState {
   incrementNodes: () => void
   toggleSimulation: () => void
   reset: () => void
+  setFollowActiveNode: (val: boolean) => void
 
   // Ações de Configuração
   setMaxNodeShape: (shape: NodeShape) => void
@@ -80,6 +82,7 @@ export const useGameStore = create<GameState>()((set) => ({
   nodesExplored: 0,
   isSimulating: false,
   resetTrigger: 0,
+  followActiveNode: true,
   tree: initialTree,
   savedCustomTree: null,
   selectedNodeId: null,
@@ -170,14 +173,25 @@ export const useGameStore = create<GameState>()((set) => ({
   incrementNodes: () => set((state) => ({ nodesExplored: state.nodesExplored + 1 })),
   toggleSimulation: () => set((state) => ({ isSimulating: !state.isSimulating })),
 
-  reset: () => set((state) => ({
-    depth: 0,
-    nodesExplored: 0,
-    isSimulating: false,
-    resetTrigger: state.resetTrigger + 1,
-    admissibilityViolations: [],
-    algorithmStats: {}
-  })),
+  reset: () => set((state) => {
+    // Se for um jogo, limpamos os filhos da árvore para voltar ao estado inicial do tabuleiro
+    const cleanedTree = (state.problemType === 'tictactoe' || state.problemType === '8puzzle')
+      ? { ...state.tree, children: [], value: undefined }
+      : state.tree;
+
+    return {
+      tree: cleanedTree,
+      depth: 0,
+      nodesExplored: 0,
+      isSimulating: false,
+      resetTrigger: state.resetTrigger + 1,
+      admissibilityViolations: [],
+      algorithmStats: {},
+      selectedNodeId: null
+    };
+  }),
+
+  setFollowActiveNode: (val) => set({ followActiveNode: val }),
 
   setNodesExplored: (count) => set({ nodesExplored: count }),
 

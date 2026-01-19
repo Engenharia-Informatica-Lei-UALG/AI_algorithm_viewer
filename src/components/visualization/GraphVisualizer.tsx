@@ -38,7 +38,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
-  const { admissibilityViolations } = useGameStore();
+  const { admissibilityViolations, followActiveNode } = useGameStore();
   
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -63,6 +63,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
           name: node.name,
           originalIds: [node.id],
           value: node.value,
+          isCurrent: node.isCurrent,
           isGoal: node.isGoal,
           isStart: parentName === null,
           x: width / 2 + (Math.random() - 0.5) * 50,
@@ -71,6 +72,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
       } else {
         const existing = uniqueNodes.get(node.name)!;
         existing.originalIds.push(node.id);
+        if (node.isCurrent) existing.isCurrent = true;
         if (node.isGoal) existing.isGoal = true;
       }
 
@@ -102,6 +104,16 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
     return { nodes: nodesArray, links };
   }, [data]); // width/height removidos para estabilidade
 
+  // Lógica para seguir o nó ativo no Grafo
+  useEffect(() => {
+    if (followActiveNode && zoomRef.current && width > 0 && height > 0) {
+      const activeNode = nodes.find(n => n.isCurrent);
+      if (activeNode && activeNode.x !== undefined && activeNode.y !== undefined) {
+        zoomRef.current.translateTo({ x: activeNode.x, y: activeNode.y });
+      }
+    }
+  }, [nodes, followActiveNode, width, height]);
+
   // Atualiza estado visual (violações) sem reiniciar física
   useEffect(() => {
     if (!svgRef.current) return;
@@ -115,9 +127,9 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
     // Atualiza visualmente os nós existentes
     svg.selectAll<SVGGElement, GraphNode>(".nodes g circle")
-      .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor")))
+      .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isCurrent ? "#a855f7" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor"))))
       .attr("stroke-width", d => d.isViolation ? 4 : 3)
-      .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))")));
+      .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isCurrent ? "#f3e8ff" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))"))));
 
     // Reinicia levemente a simulação para garantir que o loop 'ticked' pegue as mudanças de cor
     if (simulationRef.current) {
@@ -274,8 +286,8 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
         .attr("stroke-width", 3);
 
       nodeSelection.merge(nodeEnter).select("circle")
-        .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))")))
-        .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor")))
+        .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isCurrent ? "#f3e8ff" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))"))))
+        .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isCurrent ? "#a855f7" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor"))))
         .attr("stroke-width", d => d.isViolation ? 4 : 3);
 
       nodeEnter.append("text")

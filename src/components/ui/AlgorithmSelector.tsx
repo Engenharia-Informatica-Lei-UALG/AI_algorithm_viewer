@@ -231,12 +231,12 @@ export function AlgorithmSelector() {
               <Settings2 size={12} />
               Tipo de Problema
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={cn("grid gap-2", algorithm === 'mcts' ? "grid-cols-2" : "grid-cols-3")}>
               {[
                 { id: 'custom', name: 'Árvore', icon: TreePine },
                 { id: 'tictactoe', name: 'TicTacToe', icon: Gamepad2 },
                 { id: '8puzzle', name: '8-Puzzle', icon: Puzzle },
-              ].map((type) => (
+              ].filter(t => algorithm !== 'mcts' || t.id !== 'custom').map((type) => (
                 <button
                   key={type.id}
                   onClick={() => setProblemType(type.id as ProblemType)}
@@ -306,7 +306,7 @@ export function AlgorithmSelector() {
               </motion.div>
             )}
 
-            {isAdversarial && algorithm !== 'mcts' && (problemType === 'custom' || problemType === 'tictactoe') && (
+            {isAdversarial && (problemType === 'custom' || problemType === 'tictactoe') && (
               <motion.div
                 key="adversarial-settings"
                 initial={{ opacity: 0, y: -10 }}
@@ -474,6 +474,10 @@ export function AlgorithmSelector() {
                   key={algo.id}
                   onClick={() => {
                     setAlgorithm(algo.id as AlgorithmType);
+                    // Se escolher MCTS e estiver em Árvore, muda automaticamente para um jogo
+                    if (algo.id === 'mcts' && problemType === 'custom') {
+                      setProblemType('tictactoe');
+                    }
                     setIsCollapsed(true);
                   }}
                   className={cn(

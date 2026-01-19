@@ -11,7 +11,7 @@ import Link from 'next/link'
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const { tree } = useGameStore()
+  const { tree, problemType } = useGameStore()
   const [mounted, setMounted] = useState(false);
 
   const { visitedNodes, currentNodeId, stepForward, stepBack, fastForward } = useSimulation();
@@ -22,8 +22,8 @@ export default function Home() {
 
   // Memoize visxData to prevent unnecessary re-renders of the graph
   const visxData = useMemo(() =>
-    convertToVisx(tree, visitedNodes, currentNodeId),
-    [tree, visitedNodes, currentNodeId]
+    convertToVisx(tree, visitedNodes, currentNodeId, problemType),
+    [tree, visitedNodes, currentNodeId, problemType]
   );
 
   if (!mounted) return null;
@@ -89,16 +89,28 @@ export default function Home() {
   );
 }
 
-function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string | null): any {
+function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string | null, problemType: string): any {
+  // Gera uma chave única baseada no estado para comparação correta nos jogos
+  let stateKey = node.id;
+  
+  if (problemType === 'tictactoe' && node.boardState) {
+    stateKey = node.boardState.map((c: any) => c || '-').join('');
+  } else if (problemType === '8puzzle' && node.boardState) {
+    stateKey = node.boardState.join(',');
+  }
+
   return {
     id: node.id,
     name: node.name,
     value: node.value,
     isGoal: node.isGoal,
-    isCurrent: node.id === currentNodeId,
+    isCurrent: stateKey === currentNodeId,
     costToParent: node.costToParent,
-    isVisited: visitedSet.has(node.id),
+    isVisited: visitedSet.has(stateKey),
     boardState: node.boardState,
-    children: node.children ? node.children.map((c: any) => convertToVisx(c, visitedSet, currentNodeId)) : []
+    alpha: node.alpha,
+    beta: node.beta,
+    isPruned: node.isPruned,
+    children: node.children ? node.children.map((c: any) => convertToVisx(c, visitedSet, currentNodeId, problemType)) : []
   };
 }

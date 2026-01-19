@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useTranslation } from 'react-i18next'
 import { useGameStore } from "@/store/gameStore"
 import { TreeEditor } from "@/components/editor/TreeEditor"
-import { Save, TreePine, Gamepad2, Puzzle, Sparkles, List, Activity } from "lucide-react"
+import { Save, TreePine, Gamepad2, Puzzle, Sparkles, List, Activity, X, GitGraph } from "lucide-react"
 import { ImageUploadPanel } from "./ImageUploadPanel"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs"
 import { AlgorithmSelector } from "@/components/ui/AlgorithmSelector"
-import { CustomTreeNode, ProblemType } from "@/types/game"
+import { CustomTreeNode, ProblemType, AlgorithmType } from "@/types/game"
+import { motion, AnimatePresence } from "framer-motion"
 
 const JSON_EXAMPLES = {
   tree: {
@@ -103,10 +104,276 @@ const JSON_EXAMPLES = {
     ],
     "boardState": [6, 4, 7, 8, 0, 1, 3, 5, 2]
   }
+  ,
+  minimax: {
+    "type": "custom",
+    "tree": {
+      "id": "root",
+      "name": "MAX",
+      "value": 0,
+      "isGoal": false,
+      "children": [
+        {
+          "id": "L1-Min-1",
+          "name": "MIN",
+          "value": 0,
+          "isGoal": false,
+          "costToParent": 0,
+          "children": [
+            {
+              "id": "L2-Max-1-1",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-0-1", "name": "0", "value": 0, "isGoal": false, "children": [] },
+                { "id": "leaf-5-1", "name": "5", "value": 5, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-1", "name": "-3", "value": -3, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-1-2",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-3-1", "name": "3", "value": 3, "isGoal": false, "children": [] },
+                { "id": "leaf-3-2", "name": "3", "value": 3, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-2", "name": "-3", "value": -3, "isGoal": false, "children": [] },
+                { "id": "leaf-0-2", "name": "0", "value": 0, "isGoal": false, "children": [] },
+                { "id": "leaf-2-1", "name": "2", "value": 2, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-1-3",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-n2-1", "name": "-2", "value": -2, "isGoal": false, "children": [] },
+                { "id": "leaf-3-3", "name": "3", "value": 3, "isGoal": false, "children": [] },
+                { "id": "leaf-5-2", "name": "5", "value": 5, "isGoal": false, "children": [] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "L1-Min-2",
+          "name": "MIN",
+          "value": 0,
+          "isGoal": false,
+          "costToParent": 0,
+          "children": [
+            {
+              "id": "L2-Max-2-1",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-2-2", "name": "2", "value": 2, "isGoal": false, "children": [] },
+                { "id": "leaf-5-3", "name": "5", "value": 5, "isGoal": false, "children": [] },
+                { "id": "leaf-n5-1", "name": "-5", "value": -5, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-2-2",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-0-3", "name": "0", "value": 0, "isGoal": false, "children": [] },
+                { "id": "leaf-1-1", "name": "1", "value": 1, "isGoal": false, "children": [] },
+                { "id": "leaf-5-4", "name": "5", "value": 5, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-2-3",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-1-2", "name": "1", "value": 1, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-3", "name": "-3", "value": -3, "isGoal": false, "children": [] },
+                { "id": "leaf-0-4", "name": "0", "value": 0, "isGoal": false, "children": [] },
+                { "id": "leaf-n5-2", "name": "-5", "value": -5, "isGoal": false, "children": [] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "L1-Min-3",
+          "name": "MIN",
+          "value": 0,
+          "isGoal": false,
+          "costToParent": 0,
+          "children": [
+            {
+              "id": "L2-Max-3-1",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-5-5", "name": "5", "value": 5, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-4", "name": "-3", "value": -3, "isGoal": false, "children": [] },
+                { "id": "leaf-3-4", "name": "3", "value": 3, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-3-2",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-2-3", "name": "2", "value": 2, "isGoal": false, "children": [] },
+                { "id": "leaf-3-5", "name": "3", "value": 3, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-5", "name": "-3", "value": -3, "isGoal": false, "children": [] },
+                { "id": "leaf-0-5", "name": "0", "value": 0, "isGoal": false, "children": [] }
+              ]
+            },
+            {
+              "id": "L2-Max-3-3",
+              "name": "MAX",
+              "value": 0,
+              "isGoal": false,
+              "children": [
+                { "id": "leaf-n1-1", "name": "-1", "value": -1, "isGoal": false, "children": [] },
+                { "id": "leaf-n2-2", "name": "-2", "value": -2, "isGoal": false, "children": [] },
+                { "id": "leaf-0-6", "name": "0", "value": 0, "isGoal": false, "children": [] },
+                { "id": "leaf-1-3", "name": "1", "value": 1, "isGoal": false, "children": [] },
+                { "id": "leaf-4-1", "name": "4", "value": 4, "isGoal": false, "children": [] },
+                { "id": "leaf-5-6", "name": "5", "value": 5, "isGoal": false, "children": [] },
+                { "id": "leaf-1-4", "name": "1", "value": 1, "isGoal": false, "children": [] },
+                { "id": "leaf-n1-2", "name": "-1", "value": -1, "isGoal": false, "children": [] },
+                { "id": "leaf-3-6", "name": "3", "value": 3, "isGoal": false, "children": [] },
+                { "id": "leaf-n3-6", "name": "-3", "value": -3, "isGoal": false, "children": [] },
+                { "id": "leaf-2-4", "name": "2", "value": 2, "isGoal": false, "children": [] },
+                { "id": "leaf-n2-3", "name": "-2", "value": -2, "isGoal": false, "children": [] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
 };
 
+// --- SUB-COMPONENT PARA A ABA DE STATS ---
+function StatsTabContent() {
+  const { t } = useTranslation();
+  const { nodesExplored, depth, algorithmStats, algorithm, tree } = useGameStore();
+  const [showHint, setShowHint] = useState(false);
+
+  // Cálculos da estrutura
+  const treeMetrics = useMemo(() => {
+    let totalChildren = 0;
+    let maxDepth = 0;
+    const traverse = (node: CustomTreeNode, currentDepth: number) => {
+      maxDepth = Math.max(maxDepth, currentDepth);
+      if (node.children) {
+        totalChildren += node.children.length;
+        node.children.forEach(child => traverse(child, currentDepth + 1));
+      }
+    };
+    traverse(tree, 0);
+    return { totalChildren, maxDepth };
+  }, [tree]);
+
+  // Verifica se deve mostrar a dica (apenas uma vez)
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("has_seen_stats_hint");
+    if (!hasSeen) {
+      setShowHint(true);
+    }
+  }, []);
+
+  const dismissHint = () => {
+    setShowHint(false);
+    localStorage.setItem("has_seen_stats_hint", "true");
+  };
+
+  // Lista de algoritmos que usam Fronteira/Explorados
+  const isSearchAlgo = algorithm && ['bfs', 'dfs', 'ids', 'ucs', 'greedy', 'astar', 'idastar'].includes(algorithm);
+
+  // Prepara as estatísticas para exibição, garantindo que as listas apareçam para algoritmos de busca
+  const displayStats = { ...algorithmStats };
+  if (isSearchAlgo) {
+    if (!displayStats["Lista Aberta (Frontier)"]) displayStats["Lista Aberta (Frontier)"] = ["(Aguardando simulação)"];
+    if (!displayStats["Lista Fechada (Explored)"]) displayStats["Lista Fechada (Explored)"] = ["(Aguardando simulação)"];
+  }
+
+  return (
+    <div className="space-y-4 relative h-full overflow-y-auto pb-10 pr-1 custom-scrollbar">
+      <AnimatePresence>
+        {showHint && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0 }}
+            className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg text-[11px] font-bold flex items-start gap-2 mb-2 border border-primary-foreground/20"
+          >
+            <Sparkles size={14} className="text-yellow-400 shrink-0 animate-pulse" />
+            <p className="flex-1 leading-tight">{t('stats_hint') as string}</p>
+            <button onClick={dismissHint} className="hover:bg-white/20 rounded p-0.5"><X size={12} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <h3 className="font-semibold">{t('stats')}</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{(t('nodes_explored') as string)}</p>
+          <p className="text-2xl font-mono font-bold">{nodesExplored}</p>
+        </div>
+        <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Prof. Simulação</p>
+          <p className="text-2xl font-mono font-bold">{depth}</p>
+        </div>
+        <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Prof. Máxima Real</p>
+          <p className="text-2xl font-mono font-bold">{treeMetrics.maxDepth}</p>
+        </div>
+        <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total de Filhos</p>
+          <p className="text-2xl font-mono font-bold">{treeMetrics.totalChildren}</p>
+        </div>
+      </div>
+
+      {Object.keys(displayStats).length > 0 && (
+        <div className="space-y-4 pt-4 border-t">
+          <h4 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+            <Activity size={16} /> Detalhes da Execução
+          </h4>
+          <div className="space-y-2">
+            {Object.entries(displayStats).map(([key, value]) => (
+              <div key={key} className="bg-card border-2 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-muted/30 px-3 py-1.5 border-b flex items-center gap-2">
+                  <List size={12} className="text-primary" />
+                  <span className="text-xs font-bold uppercase">{key}</span>
+                </div>
+                <div className="p-2">
+                  {Array.isArray(value) && typeof value[0] === 'string' ? (
+                    <div className="flex flex-col gap-2.5 max-h-[600px] overflow-y-auto custom-scrollbar p-1">
+                      {value.map((item, i) => (
+                        <span key={i} className="text-sm font-mono bg-muted/50 px-4 py-3 rounded border-l-4 border-l-primary truncate shadow-md hover:bg-muted transition-colors">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-base font-mono font-bold px-1">{(value as React.ReactNode)}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function EditorPanel() {
-  const { tree, updateTree, nodesExplored, depth, setProblemType, algorithmStats } = useGameStore()
+  const { tree, updateTree, setProblemType } = useGameStore()
   const { t } = useTranslation()
   const [jsonInput, setJsonInput] = useState("");
 
@@ -176,12 +443,18 @@ export function EditorPanel() {
               <span className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
                 <Sparkles size={10} /> Exemplos Rápidos
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tree, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
                   <TreePine size={12} /> Árvore
+                </button>
+                <button 
+                  onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.minimax, null, 2))}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
+                >
+                  <GitGraph size={12} /> Minimax
                 </button>
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tictactoe, null, 2))}
@@ -214,51 +487,7 @@ export function EditorPanel() {
         </TabsContent>
 
         <TabsContent value="stats">
-          <div className="space-y-4">
-            <h3 className="font-semibold">{t('stats')}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-muted/50 rounded-lg border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{(t('nodes_explored') as string)}</p>
-                <p className="text-2xl font-mono font-bold">{nodesExplored}</p>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{(t('depth') as string)}</p>
-                <p className="text-2xl font-mono font-bold">{depth}</p>
-              </div>
-            </div>
-
-            {/* Estatísticas Dinâmicas do Algoritmo */}
-            {Object.keys(algorithmStats).length > 0 && (
-              <div className="space-y-3 pt-2 border-t">
-                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Activity size={14} /> Detalhes da Execução
-                </h4>
-                <div className="space-y-2">
-                  {Object.entries(algorithmStats).map(([key, value]) => (
-                    <div key={key} className="bg-card border rounded-lg overflow-hidden">
-                      <div className="bg-muted/30 px-3 py-1.5 border-b flex items-center gap-2">
-                        <List size={12} className="text-primary" />
-                        <span className="text-[10px] font-bold uppercase">{key}</span>
-                      </div>
-                      <div className="p-2">
-                        {Array.isArray(value) ? (
-                          <div className="flex flex-wrap gap-1">
-                            {value.map((item, i) => (
-                              <span key={i} className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded border truncate max-w-full">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-sm font-mono font-medium">{(value as React.ReactNode)}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <StatsTabContent />
         </TabsContent>
 
         <TabsContent value="upload">

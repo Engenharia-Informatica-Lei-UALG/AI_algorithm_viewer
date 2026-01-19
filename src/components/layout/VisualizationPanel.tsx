@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { useGameStore } from "@/store/gameStore"
 import TreeGraph from "@/components/visualization/TreeGraph"
 import GraphVisualizer from "@/components/visualization/GraphVisualizer"
-import { Play, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch, X, Sparkles, Maximize } from 'lucide-react'
+import { Play, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch, X, Sparkles, Maximize, LocateFixed } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ParentSize } from '@visx/responsive'
+import { cn } from '@/lib/utils'
 
 interface VisualizationPanelProps {
   visxData: any;
@@ -18,7 +19,7 @@ interface VisualizationPanelProps {
 
 export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, onFastForwardAction }: VisualizationPanelProps) {
   const { t } = useTranslation()
-  const { algorithm, isSimulating, reset, nodesExplored, problemType } = useGameStore()
+  const { algorithm, isSimulating, reset, nodesExplored, problemType, followActiveNode, setFollowActiveNode } = useGameStore()
   const [viewMode, setViewMode] = useState<'tree' | 'graph'>('tree')
   const [showHint, setShowHint] = useState(false)
   const [zoomResetTrigger, setZoomResetTrigger] = useState(0)
@@ -70,6 +71,17 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                 <FastForward size={18} />
               </button>
             </div>
+
+            <button
+              onClick={() => setFollowActiveNode(!followActiveNode)}
+              className={cn(
+                "p-2 border rounded-lg transition-all shadow-sm",
+                followActiveNode ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-accent"
+              )}
+              title={t('follow_node') as string}
+            >
+              <LocateFixed size={18} />
+            </button>
 
             <button
               onClick={() => setZoomResetTrigger(v => v + 1)}

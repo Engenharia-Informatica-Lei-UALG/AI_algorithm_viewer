@@ -22,7 +22,8 @@ export function useSimulation() {
     goalState,
     updateTree,
     searchSettings,
-    setAlgorithmStats
+    setAlgorithmStats,
+    ticTacToeMaxPlayer
   } = useGameStore();
 
   const searchAlgoRef = useRef<SearchAlgorithm<any, any> | null>(null);
@@ -30,7 +31,6 @@ export function useSimulation() {
 
   const [history, setHistory] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Detecta mudanças no estado inicial do problema para reinicializar a simulação
   // Para problemas customizados, queremos que a simulação reinicie se a estrutura da árvore mudar
@@ -62,7 +62,7 @@ export function useSimulation() {
     // 1. Cria a instância do problema
     switch (problemType) {
       case 'tictactoe':
-        problem = new TicTacToe(tree.boardState);
+        problem = new TicTacToe(tree.boardState, ticTacToeMaxPlayer);
         break;
       case '8puzzle':
         problem = new EightPuzzle(tree.boardState, goalState);
@@ -101,6 +101,7 @@ export function useSimulation() {
       return;
     }
 
+    // Se já terminou, para a simulação
     const algo = searchAlgoRef.current;
     if (!algo) return;
 
@@ -133,29 +134,74 @@ export function useSimulation() {
     setCurrentStep(c => Math.max(0, c - 1));
   };
 
+  // Padrão para evitar que o setInterval use valores antigos (stale closures)
+  // e para evitar que o timer resete a cada renderização
+  const executeStepRef = useRef(executeStep);
   useEffect(() => {
-    if (isSimulating && searchAlgoRef.current) {
-      timerRef.current = setInterval(executeStep, 500);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+    executeStepRef.current = executeStep;
+  }, [executeStep]);
+
+  useEffect(() => {
+    if (isSimulating) {
+      const interval = setInterval(() => {
+        executeStepRef.current();
+      }, 500);
+      return () => clearInterval(interval);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isSimulating, history, currentStep, toggleSimulation]);
+  }, [isSimulating]);
 
   const visitedNodes = useMemo(() => new Set(history.slice(0, currentStep)), [history, currentStep]);
   const currentNodeId = useMemo(() => history[currentStep - 1] || null, [history, currentStep]);
+
+  const fastForward = () => {
+    const algo = searchAlgoRef.current;
+    if (!algo) return;
+
+    let updatedHistory = [...history];
+    let lastNode = null;
+    let changed = false;
+
+    // Limite de segurança para evitar que o browser trave (Freeze protection)
+    // Algoritmos que geram muitas sub-árvores ou rollouts são limitados a 20 passos por clique
+    let steps = 0;
+    const maxSteps = (algorithm === 'mcts' || algorithm === 'idastar' || algorithm === 'ids') ? 20 : 1000;
+
+    // 1. Se o algoritmo ainda estiver rodando, executa até o fim instantaneamente
+    while (algo.getStatus() !== SearchStatus.COMPLETED && algo.getStatus() !== SearchStatus.FAILED && steps < maxSteps) {
+      const node = algo.step();
+      if (!node) break;
+      
+      changed = true;
+      lastNode = node;
+      const nodeId = (node.state as any).key || (node.state as any).nodeId;
+      if (nodeId) updatedHistory.push(nodeId);
+      steps++;
+    }
+
+    // 2. Se voltamos atrás no histórico, queremos pular para o fim do que já temos
+    if (currentStep < history.length) changed = true;
+
+    if (changed) {
+      if (lastNode) {
+        if (problemType !== 'custom' && 'getTree' in algo) {
+          updateTree((algo as any).getTree());
+        }
+        if (algo.getAttributes) {
+          setAlgorithmStats(algo.getAttributes());
+        }
+      }
+      setHistory(updatedHistory);
+      setCurrentStep(updatedHistory.length);
+    }
+
+    if (isSimulating) toggleSimulation();
+  };
 
   return {
     visitedNodes,
     currentNodeId,
     stepForward: executeStep,
     stepBack,
-    fastForward: () => {
-      if (!isSimulating) toggleSimulation();
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(executeStep, 50);
-    }
+    fastForward
   };
 }

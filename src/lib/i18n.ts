@@ -30,6 +30,8 @@ const resources = {
       "graph_mode": "Graph Mode (Force-Directed)",
       "view_hint": "Tip: Switch between Tree and Graph views here!",
       "center_view": "Center View",
+      "stats_hint": "Tip: Track the nodes the AI is processing in real-time here!",
+      "follow_node": "Follow Active Node",
       "editor": {
         "title": "Tree Editor",
         "structure_title": "Search Structure",
@@ -95,6 +97,8 @@ const resources = {
       "graph_mode": "Modo Grafo (Force-Directed)",
       "view_hint": "Dica: Alterne entre vista de Árvore e Grafo aqui!",
       "center_view": "Centralizar Vista",
+      "stats_hint": "Dica: Acompanhe aqui os nós que a IA está a processar em tempo real!",
+      "follow_node": "Seguir Nó Ativo",
       "editor": {
         "title": "Editor de Árvore",
         "structure_title": "Estrutura da Busca",

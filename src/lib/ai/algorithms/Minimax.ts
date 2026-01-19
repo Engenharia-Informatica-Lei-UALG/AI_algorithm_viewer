@@ -18,12 +18,13 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
   protected initialize(): void {
     this.status = SearchStatus.RUNNING;
     this.nodesExplored = 0;
+    const initialState = this.problem.initialState as any;
     this.tree = {
       id: 'root',
       name: 'Start',
       children: [],
       value: undefined,
-      boardState: (this.problem.initialState as any).board,
+      boardState: initialState.board || initialState.boardState,
     };
     // Inicializa o gerador que controlará a execução passo-a-passo
     this.iterator = this.minimaxGenerator(this.problem.initialState, -Infinity, Infinity, 0, this.tree!, 'root', 'root', true);
@@ -57,8 +58,10 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     };
 
     if (depth >= this.maxDepth || this.problem.isGoal(state)) {
-      const utility = this.problem.getUtility ? this.problem.getUtility(state, 1) : 0;
+      const utility = this.problem.getUtility ? this.problem.getUtility(state, 0) : 0;
       visualNode.value = utility;
+      visualNode.alpha = utility;
+      visualNode.beta = utility;
       return utility;
     }
 
@@ -72,12 +75,13 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const nextState = this.problem.getResult(state, action);
+      const nextStateAny = nextState as any;
       
       const childVisualNode: CustomTreeNode = {
         id: `${visualNode.id}-${action.name}`,
         name: action.name,
         children: [],
-        boardState: (nextState as any).board,
+        boardState: nextStateAny.board || nextStateAny.boardState,
       };
       visualNode.children.push(childVisualNode);
 
@@ -96,11 +100,13 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       if (isMax) {
         if (childValue > value) {
           value = childValue;
+          visualNode.alpha = value;
           currentAlphaId = visualNode.id; // Atualiza quem define o Alpha
         }
       } else {
         if (childValue < value) {
           value = childValue;
+          visualNode.beta = value;
           currentBetaId = visualNode.id; // Atualiza quem define o Beta
         }
       }

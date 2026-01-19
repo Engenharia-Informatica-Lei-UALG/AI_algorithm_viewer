@@ -77,6 +77,7 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
     this.explored.add(node.state.key);
 
     const actions = this.problem.getActions(node.state);
+
     for (const action of actions) {
       const nextState = this.problem.getResult(node.state, action);
 
@@ -129,17 +130,21 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
   }
 
   public getAttributes(): Record<string, string | number | string[]> {
-    // Pega os próximos 10 nós da fronteira para exibir
-    const frontierNames = this.frontier.slice(0, 10).map(n => {
+    const frontierNames = this.frontier.map(n => {
       const name = (n.state as any).nodeRef?.name || (n.action?.name) || 'Start';
       const score = n.getScore();
       return `${name} (f=${score.toFixed(1)})`;
     });
 
+    const exploredNames = Array.from(this.explored).map(key => {
+        // Tenta simplificar a chave para exibição
+        return key.length > 10 ? key.substring(0, 8) + '...' : key;
+    });
+
     return {
-      "Tamanho da Fronteira (Open)": this.frontier.length,
-      "Nós na Fronteira (Próximos)": frontierNames.length > 0 ? frontierNames : ["(Vazio)"],
-      "Nós Explorados (Closed)": this.explored.size,
+      "Lista Aberta (Frontier)": frontierNames.length > 0 ? frontierNames : ["(Vazio)"],
+      "Lista Fechada (Explored)": exploredNames.length > 0 ? exploredNames : ["(Vazio)"],
+      "Total de Visitados": this.explored.size,
     };
   }
 

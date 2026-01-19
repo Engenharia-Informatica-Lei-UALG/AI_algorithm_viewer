@@ -108,7 +108,7 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   }
 
   private selectBestChild(node: MCTSNode<S, A>): MCTSNode<S, A> {
-    const isMaxPlayer = (node.state as any).playerTurn === 'X';
+    const isMaxPlayer = (node.state as any).playerTurn === ((this.problem as any).maxPlayer || 'X');
     
     const getUCB1 = (n: MCTSNode<S, A>) => {
       const exploitation = n.value / n.visits;
