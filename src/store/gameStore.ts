@@ -27,6 +27,9 @@ interface GameState {
   // IDs de nós que violam a admissibilidade
   admissibilityViolations: string[]
 
+  // Estatísticas dinâmicas do algoritmo (ex: Lista de Abertos, Fechados, UCB)
+  algorithmStats: Record<string, string | number | string[]>
+
   // Estado da Árvore Customizada
   tree: CustomTreeNode
   savedCustomTree: CustomTreeNode | null // Backup para quando mudar de tipo
@@ -53,6 +56,7 @@ interface GameState {
   setAdmissibilityViolations: (ids: string[]) => void
   toggleAdmissibility: () => void
 
+  setAlgorithmStats: (stats: Record<string, string | number | string[]>) => void
   // Ações de Edição da Árvore
   updateTree: (newTree: CustomTreeNode) => void
   addNode: (parentId: string, node: CustomTreeNode) => void
@@ -80,6 +84,7 @@ export const useGameStore = create<GameState>()((set) => ({
   savedCustomTree: null,
   selectedNodeId: null,
   admissibilityViolations: [],
+  algorithmStats: {},
   goalState: [1, 2, 3, 4, 5, 6, 7, 8, 0],
 
   // Default settings
@@ -102,7 +107,8 @@ export const useGameStore = create<GameState>()((set) => ({
       algorithm: algo,
       admissibilityViolations: [],
       nodesExplored: 0,
-      resetTrigger: state.resetTrigger + 1
+      resetTrigger: state.resetTrigger + 1,
+      algorithmStats: {}
     };
   }),
 
@@ -118,6 +124,7 @@ export const useGameStore = create<GameState>()((set) => ({
         isSimulating: false,
         resetTrigger: state.resetTrigger + 1,
         admissibilityViolations: [],
+        algorithmStats: {}
       };
     }
 
@@ -155,6 +162,7 @@ export const useGameStore = create<GameState>()((set) => ({
       admissibilityViolations: [],
       nodesExplored: 0,
       isSimulating: false,
+      algorithmStats: {}
     };
   }),
 
@@ -167,7 +175,8 @@ export const useGameStore = create<GameState>()((set) => ({
     nodesExplored: 0,
     isSimulating: false,
     resetTrigger: state.resetTrigger + 1,
-    admissibilityViolations: []
+    admissibilityViolations: [],
+    algorithmStats: {}
   })),
 
   setNodesExplored: (count) => set({ nodesExplored: count }),
@@ -193,6 +202,8 @@ export const useGameStore = create<GameState>()((set) => ({
   }),
 
   setAdmissibilityViolations: (ids) => set({ admissibilityViolations: ids }),
+
+  setAlgorithmStats: (stats) => set({ algorithmStats: stats }),
 
   toggleAdmissibility: () => set((state) => {
     // Se já houver violações sendo exibidas, limpa (toggle off) para remover a animação

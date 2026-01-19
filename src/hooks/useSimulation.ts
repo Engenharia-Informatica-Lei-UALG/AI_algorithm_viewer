@@ -21,7 +21,8 @@ export function useSimulation() {
     problemType,
     goalState,
     updateTree,
-    searchSettings
+    searchSettings,
+    setAlgorithmStats
   } = useGameStore();
 
   const searchAlgoRef = useRef<SearchAlgorithm<any, any> | null>(null);
@@ -54,6 +55,7 @@ export function useSimulation() {
     setHistory([]);
     setCurrentStep(0);
     setNodesExplored(0);
+    setAlgorithmStats({});
 
     let problem: Problem<any, any>;
 
@@ -112,6 +114,11 @@ export function useSimulation() {
       // Para problemas dinâmicos, atualizamos a árvore visual
       if (problemType !== 'custom' && 'getTree' in algo) {
         updateTree((algo as any).getTree());
+      }
+      
+      // Atualiza estatísticas específicas do algoritmo (Fronteira, etc)
+      if (algo.getAttributes) {
+        setAlgorithmStats(algo.getAttributes());
       }
 
       const nodeId = (node.state as any).key || (node.state as any).nodeId;

@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
-import { useGameStore, ProblemType } from "@/store/gameStore"
+import { useGameStore } from "@/store/gameStore"
 import { TreeEditor } from "@/components/editor/TreeEditor"
-import { Save, TreePine, Gamepad2, Puzzle, Sparkles } from "lucide-react"
+import { Save, TreePine, Gamepad2, Puzzle, Sparkles, List, Activity } from "lucide-react"
 import { ImageUploadPanel } from "./ImageUploadPanel"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs"
 import { AlgorithmSelector } from "@/components/ui/AlgorithmSelector"
-import { CustomTreeNode } from "@/types/game"
+import { CustomTreeNode, ProblemType } from "@/types/game"
 
 const JSON_EXAMPLES = {
   tree: {
@@ -106,7 +106,7 @@ const JSON_EXAMPLES = {
 };
 
 export function EditorPanel() {
-  const { tree, updateTree, nodesExplored, depth, setProblemType } = useGameStore()
+  const { tree, updateTree, nodesExplored, depth, setProblemType, algorithmStats } = useGameStore()
   const { t } = useTranslation()
   const [jsonInput, setJsonInput] = useState("");
 
@@ -226,6 +226,38 @@ export function EditorPanel() {
                 <p className="text-2xl font-mono font-bold">{depth}</p>
               </div>
             </div>
+
+            {/* Estatísticas Dinâmicas do Algoritmo */}
+            {Object.keys(algorithmStats).length > 0 && (
+              <div className="space-y-3 pt-2 border-t">
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Activity size={14} /> Detalhes da Execução
+                </h4>
+                <div className="space-y-2">
+                  {Object.entries(algorithmStats).map(([key, value]) => (
+                    <div key={key} className="bg-card border rounded-lg overflow-hidden">
+                      <div className="bg-muted/30 px-3 py-1.5 border-b flex items-center gap-2">
+                        <List size={12} className="text-primary" />
+                        <span className="text-[10px] font-bold uppercase">{key}</span>
+                      </div>
+                      <div className="p-2">
+                        {Array.isArray(value) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {value.map((item, i) => (
+                              <span key={i} className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded border truncate max-w-full">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-sm font-mono font-medium">{value}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
 

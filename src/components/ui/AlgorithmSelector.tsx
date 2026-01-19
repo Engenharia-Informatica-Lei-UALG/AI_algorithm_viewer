@@ -26,7 +26,7 @@ import {
   RotateCcw
 } from "lucide-react"
 import { useGameStore } from "@/store/gameStore"
-import { CustomTreeNode, NodeShape, ProblemType, NodeViewMode } from "@/types/game"
+import { CustomTreeNode, NodeShape, ProblemType, NodeViewMode, AlgorithmType } from "@/types/game"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
@@ -473,7 +473,7 @@ export function AlgorithmSelector() {
                 <div
                   key={algo.id}
                   onClick={() => {
-                    setAlgorithm(algo.id as any);
+                    setAlgorithm(algo.id as AlgorithmType);
                     setIsCollapsed(true);
                   }}
                   className={cn(

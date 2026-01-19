@@ -61,4 +61,9 @@ export abstract class SearchAlgorithm<S extends State, A extends Action> {
 
   // Configuração inicial específica do algoritmo
   protected abstract initialize(): void;
+
+  // Retorna estatísticas específicas do algoritmo para a UI (ex: Fronteira, Lista Fechada)
+  public getAttributes(): Record<string, string | number | string[]> {
+    return {};
+  }
 }

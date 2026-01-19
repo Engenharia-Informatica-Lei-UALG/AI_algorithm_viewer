@@ -7,6 +7,7 @@ import TreeGraph from "@/components/visualization/TreeGraph"
 import GraphVisualizer from "@/components/visualization/GraphVisualizer"
 import { Play, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch, X, Sparkles, Maximize } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ParentSize } from '@visx/responsive'
 
 interface VisualizationPanelProps {
   visxData: any;
@@ -145,11 +146,15 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
         </div>
         
         <div className="flex-1 bg-background relative overflow-hidden">
-          {viewMode === 'tree' || problemType !== 'custom' ? (
-             <TreeGraph data={visxData} width={800} height={600} zoomResetTrigger={zoomResetTrigger} />
-          ) : (
-             <GraphVisualizer data={visxData} width={800} height={600} zoomResetTrigger={zoomResetTrigger} />
-          )}
+          <ParentSize>
+            {({ width, height }) => (
+              viewMode === 'tree' || problemType !== 'custom' ? (
+                <TreeGraph data={visxData} width={width} height={height} zoomResetTrigger={zoomResetTrigger} />
+              ) : (
+                <GraphVisualizer data={visxData} width={width} height={height} zoomResetTrigger={zoomResetTrigger} />
+              )
+            )}
+          </ParentSize>
         </div>
       </div>
     </section>

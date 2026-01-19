@@ -44,7 +44,8 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
     if (zoomRef.current) {
       zoomRef.current.reset();
     }
-  }, [zoomResetTrigger]);
+    // Adicionamos width/height para garantir que resete se a janela mudar drasticamente
+  }, [zoomResetTrigger, width, height]);
 
   const { nodes, links } = useMemo(() => {
     const uniqueNodes = new Map<string, GraphNode>();
@@ -202,14 +203,16 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
       labelUpdate.select("rect")
         .attr("x", function () {
-          // @ts-ignore 
-          const textWidth = this.parentNode.querySelector("text").getBBox().width;
+          const parent = (this as unknown as SVGElement).parentNode as SVGElement;
+          const text = parent?.querySelector("text") as SVGGraphicsElement;
+          const textWidth = text?.getBBox()?.width ?? 0;
           return -textWidth / 2 - 4;
         })
         .attr("y", -10)
         .attr("width", function () {
-          // @ts-ignore
-          const textWidth = this.parentNode.querySelector("text").getBBox().width;
+          const parent = (this as unknown as SVGElement).parentNode as SVGElement;
+          const text = parent?.querySelector("text") as SVGGraphicsElement;
+          const textWidth = text?.getBBox()?.width ?? 0;
           return textWidth + 8;
         })
         .attr("height", 20);
@@ -285,7 +288,10 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
         {(zoom) => (
           <div
             className="relative w-full h-full overflow-hidden"
-            ref={(node) => { zoom.containerRef.current = node; zoomRef.current = zoom; }}
+            ref={(node) => { 
+              if (zoom.containerRef) (zoom.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+              zoomRef.current = zoom; 
+            }}
             style={{ touchAction: 'none' }}
           >
             <svg

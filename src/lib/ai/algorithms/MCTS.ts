@@ -137,4 +137,14 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
 
     return convert(this.root!, 'root');
   }
+
+  public getAttributes(): Record<string, string | number | string[]> {
+    if (!this.root) return {};
+    return {
+      "Iterações Totais": `${this.nodesExplored} / ${this.iterations}`,
+      "Visitas na Raiz": this.root.visits,
+      "Valor da Raiz": this.root.value.toFixed(2),
+      "Fator de Exploração (C)": this.cParam.toFixed(3)
+    };
+  }
 }

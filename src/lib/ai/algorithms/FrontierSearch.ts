@@ -128,6 +128,21 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
     return Array.from(this.visualNodeMap.values())[0];
   }
 
+  public getAttributes(): Record<string, string | number | string[]> {
+    // Pega os próximos 10 nós da fronteira para exibir
+    const frontierNames = this.frontier.slice(0, 10).map(n => {
+      const name = (n.state as any).nodeRef?.name || (n.action?.name) || 'Start';
+      const score = n.getScore();
+      return `${name} (f=${score.toFixed(1)})`;
+    });
+
+    return {
+      "Tamanho da Fronteira (Open)": this.frontier.length,
+      "Nós na Fronteira (Próximos)": frontierNames.length > 0 ? frontierNames : ["(Vazio)"],
+      "Nós Explorados (Closed)": this.explored.size,
+    };
+  }
+
   static createBFS<S extends State, A extends Action>(problem: Problem<S, A>) {
     return new FrontierSearch(problem, null);
   }

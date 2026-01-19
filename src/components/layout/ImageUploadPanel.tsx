@@ -96,7 +96,7 @@ export function ImageUploadPanel() {
         if (resultType === 'tictactoe') {
             setProblemType('tictactoe')
             // Aceita boardState (correto) ou board (fallback caso a IA erre)
-            const boardData = result.boardState || (result as any).board || Array(9).fill(null);
+            const boardData = (result as any).boardState || (result as any).board || Array(9).fill(null);
             
             finalTreeForDisplay = { 
               id: 'root', 
@@ -110,7 +110,7 @@ export function ImageUploadPanel() {
             }, 100);
         } else if (resultType === '8puzzle') {
              setProblemType('8puzzle')
-             const boardData = result.boardState || (result as any).board || [1, 2, 3, 4, 5, 6, 7, 8, 0];
+             const boardData = (result as any).boardState || (result as any).board || [1, 2, 3, 4, 5, 6, 7, 8, 0];
              
              finalTreeForDisplay = { 
                id: 'root', 

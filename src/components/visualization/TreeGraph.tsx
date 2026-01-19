@@ -268,13 +268,30 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
   const zoomRef = useRef<any>(null);
 
+  const root = useMemo(() => hierarchy(data), [data]);
+
+  const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
+  const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
+  const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
+  const treeWidth = Math.max(width - 100, root.leaves().length * minNodeWidth);
+  const treeHeight = Math.max(height - 150, root.height * minNodeHeight);
+
   useEffect(() => {
     if (zoomRef.current) {
-      zoomRef.current.reset();
-    }
-  }, [zoomResetTrigger]);
+      // Lógica de centralização inteligente
+      // O layout da árvore coloca a raiz em (treeWidth / 2)
+      // O Group tem um offset de left={50}
+      // Queremos que o ponto (treeWidth/2 + 50) esteja no centro do ecrã (width/2)
+      
+      const rootX = treeWidth / 2;
+      const screenCenter = width / 2;
+      // dx é o quanto precisamos mover para alinhar os centros
+      const dx = screenCenter - (rootX + 50);
 
-  const root = useMemo(() => hierarchy(data), [data]);
+      zoomRef.current.translateTo({ x: dx, y: 0 });
+      zoomRef.current.scale({ scaleX: 1, scaleY: 1 });
+    }
+  }, [zoomResetTrigger, width, treeWidth]); // Recalcula se a largura mudar
 
   const handleNodeClick = (e: React.MouseEvent, node: CustomTreeNode) => {
     e.stopPropagation();
@@ -314,13 +331,9 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     updateNodeAttributes(currentNode.id, { boardState: newBoard });
   };
 
-  const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
-  const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
-  const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
-  const treeWidth = Math.max(width - 100, root.leaves().length * minNodeWidth);
-  const treeHeight = Math.max(height - 150, root.height * minNodeHeight);
   const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs'].includes(algorithm);
   const isAlphaBeta = algorithm === 'alpha-beta';
+  const isMCTS = algorithm === 'mcts';
 
   const isRepeatedNode = (node: any) => {
     let current = node.parent;
@@ -380,7 +393,10 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     <div className="relative w-full h-full overflow-hidden bg-background rounded-xl border-2 border-border shadow-inner transition-colors duration-300">
       <Zoom width={width} height={height} scaleXMin={1 / 4} scaleXMax={4} scaleYMin={1 / 4} scaleYMax={4}>
         {(zoom) => (
-          <div className="relative w-full h-full overflow-hidden" ref={(node) => { zoom.containerRef.current = node; zoomRef.current = zoom; }} style={{ touchAction: 'none' }}>
+          <div className="relative w-full h-full overflow-hidden" ref={(node) => { 
+            if (zoom.containerRef) (zoom.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            zoomRef.current = zoom; 
+          }} style={{ touchAction: 'none' }}>
             <svg width={width} height={height} className={cn("w-full h-full", zoom.isDragging ? "cursor-grabbing" : "cursor-grab")} onClick={() => setSelectedNode(null)}>
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" className="text-muted/10" /></pattern>
@@ -416,10 +432,22 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                             {isGoal && !isPruned && <motion.circle r={36} fill="none" stroke="#22c55e" strokeWidth={3} strokeDasharray="4 4" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, rotate: 360 }} transition={{ rotate: { duration: 10, repeat: Infinity, ease: "linear" }, default: { duration: 0.3 } }} />}
                             {isCurrent && <motion.circle r={34} fill="none" stroke="#a855f7" strokeWidth={4} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
                             {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
-                            {showHeuristic && nodeData.value !== undefined && !isPruned && (
+                            
+                            {/* Visualização Padrão de Heurística */}
+                            {showHeuristic && !isMCTS && nodeData.value !== undefined && !isPruned && (
                               <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
                                 <rect x={-18} y={-12} width={36} height={20} rx={10} fill="currentColor" className="text-foreground" />
                                 <text dy=".33em" fontSize={10} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-background">{nodeViewMode === 'game' ? 'v' : 'h'}:{nodeData.value}</text>
+                              </Group>
+                            )}
+
+                            {/* Visualização Específica MCTS (Q/N) */}
+                            {isMCTS && !isPruned && (
+                              <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
+                                <rect x={-25} y={-12} width={50} height={20} rx={10} fill="currentColor" className="text-foreground" />
+                                <text dy=".33em" fontSize={9} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-background">
+                                  {nodeData.value?.toFixed(1)} / {nodeData.visits || 0}
+                                </text>
                               </Group>
                             )}
                             {isAlphaBeta && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
