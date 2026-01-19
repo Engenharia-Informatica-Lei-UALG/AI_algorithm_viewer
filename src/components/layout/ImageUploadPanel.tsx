@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { ImageAnalysisService, LLMProvider } from "@/lib/ai/services/ImageAnalysisService"
 import { useGameStore, AlgorithmType } from "@/store/gameStore"
 import { CustomTreeNode } from "@/types/game"
-import { Upload, Loader2, Key, Settings2, Copy, Check, Server, Box } from "lucide-react"
+import { Upload, Loader2, Key, Settings2, Copy, Check, Server, Box, Edit2, RotateCcw } from "lucide-react"
 
 export function ImageUploadPanel() {
   const { t } = useTranslation()
@@ -23,6 +23,11 @@ export function ImageUploadPanel() {
   const [error, setError] = useState<string | null>(null)
   const [generatedJson, setGeneratedJson] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  
+  // Prompt
+  const [prompt, setPrompt] = useState("")
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Carregar dados do localStorage
   useEffect(() => {
@@ -40,6 +45,9 @@ export function ImageUploadPanel() {
 
     const storedJson = localStorage.getItem("last_analysis_json");
     if (storedJson) setGeneratedJson(storedJson);
+
+    // Inicializa o prompt com o padrão
+    setPrompt(ImageAnalysisService.getPrompt());
   }, []);
 
   // Atualizar API Key ao mudar de provedor
@@ -76,7 +84,7 @@ export function ImageUploadPanel() {
         model: customModel
       })
       
-      const result = await service.analyzeImage(file)
+      const result = await service.analyzeImage(file, prompt)
 
       if (result) {
         if (selectedAlgo) setAlgorithm(selectedAlgo)
@@ -145,6 +153,16 @@ export function ImageUploadPanel() {
     }
   }
 
+  const copyPromptToClipboard = () => {
+    navigator.clipboard.writeText(prompt)
+    setPromptCopied(true)
+    setTimeout(() => setPromptCopied(false), 2000)
+  }
+
+  const resetPrompt = () => {
+    setPrompt(ImageAnalysisService.getPrompt())
+  }
+
   return (
     <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
       
@@ -207,6 +225,48 @@ export function ImageUploadPanel() {
               />
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Prompt Configuration */}
+      <div className="border rounded-lg p-2 bg-card shadow-sm">
+        <button 
+            onClick={() => setIsEditingPrompt(!isEditingPrompt)}
+            className="flex items-center justify-between w-full text-xs font-medium hover:text-primary transition-colors"
+        >
+            <div className="flex items-center gap-2">
+                <Edit2 size={14} />
+                <span>Prompt do Sistema</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+                {isEditingPrompt ? "Ocultar" : "Editar"}
+            </span>
+        </button>
+        
+        {isEditingPrompt && (
+            <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-1">
+                <div className="flex justify-end gap-2">
+                     <button 
+                        onClick={resetPrompt}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <RotateCcw size={12} /> Restaurar
+                    </button>
+                    <button 
+                        onClick={copyPromptToClipboard}
+                        className="flex items-center gap-1 text-[10px] text-primary hover:underline transition-colors"
+                    >
+                        {promptCopied ? <Check size={12} /> : <Copy size={12} />}
+                        {promptCopied ? "Copiado" : "Copiar"}
+                    </button>
+                </div>
+                <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="w-full h-32 text-[11px] p-2 rounded border bg-background focus:ring-1 focus:ring-primary outline-none font-mono resize-y"
+                    placeholder="Digite o prompt para a IA..."
+                />
+            </div>
         )}
       </div>
 

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { produce } from 'immer'
 import {
   AlgorithmType,
   ProblemType,
@@ -68,7 +69,7 @@ const initialTree: CustomTreeNode = {
   children: [],
 };
 
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>()((set) => ({
   algorithm: null,
   problemType: 'custom',
   depth: 0,
@@ -107,6 +108,18 @@ export const useGameStore = create<GameState>((set) => ({
 
   setProblemType: (type) => set((state) => {
     if (state.isSimulating) return state;
+
+    // Se o tipo for o mesmo, apenas garantimos que a simulação seja resetada
+    // para aceitar novos dados (como um novo JSON colado)
+    if (state.problemType === type) {
+      return {
+        nodesExplored: 0,
+        depth: 0,
+        isSimulating: false,
+        resetTrigger: state.resetTrigger + 1,
+        admissibilityViolations: [],
+      };
+    }
 
     let savedCustomTree = state.savedCustomTree;
     if (state.problemType === 'custom') {
@@ -213,62 +226,59 @@ export const useGameStore = create<GameState>((set) => ({
 
   updateTree: (newTree) => set((state) => {
     if (state.isSimulating) return state;
-    return { tree: newTree };
+    
+    // Ao atualizar a árvore, se estivermos no modo custom, 
+    // salvamos como o novo "estado mestre" para persistência na sessão
+    return { 
+      tree: newTree,
+      savedCustomTree: state.problemType === 'custom' ? newTree : state.savedCustomTree
+    };
   }),
 
   addNode: (parentId, newNode) => set((state) => {
     if (state.isSimulating) return state;
 
-    const newTree = JSON.parse(JSON.stringify(state.tree));
-    const addRecursive = (node: CustomTreeNode) => {
-      if (node.id === parentId) {
-        node.children.push(newNode);
-        return true;
-      }
-      for (const child of node.children) {
-        if (addRecursive(child)) return true;
-      }
-      return false;
-    };
-    addRecursive(newTree);
-    return { tree: newTree };
+    return produce(state, (draft) => {
+      const findAndAdd = (node: CustomTreeNode) => {
+        if (node.id === parentId) {
+          node.children.push(newNode);
+          return true;
+        }
+        return node.children.some(findAndAdd);
+      };
+      findAndAdd(draft.tree);
+    });
   }),
 
   removeNode: (nodeId) => set((state) => {
     if (state.isSimulating) return state;
     if (nodeId === 'root') return state;
 
-    const newTree = JSON.parse(JSON.stringify(state.tree));
-    const removeRecursive = (node: CustomTreeNode) => {
-      const index = node.children.findIndex(c => c.id === nodeId);
-      if (index !== -1) {
-        node.children.splice(index, 1);
-        return true;
-      }
-      for (const child of node.children) {
-        if (removeRecursive(child)) return true;
-      }
-      return false;
-    };
-    removeRecursive(newTree);
-    return { tree: newTree };
+    return produce(state, (draft) => {
+      const removeRecursive = (node: CustomTreeNode) => {
+        const index = node.children.findIndex(c => c.id === nodeId);
+        if (index !== -1) {
+          node.children.splice(index, 1);
+          return true;
+        }
+        return node.children.some(removeRecursive);
+      };
+      removeRecursive(draft.tree);
+    });
   }),
 
   updateNodeAttributes: (nodeId, attributes) => set((state) => {
     if (state.isSimulating) return state;
 
-    const newTree = JSON.parse(JSON.stringify(state.tree));
-    const updateRecursive = (node: CustomTreeNode) => {
-      if (node.id === nodeId) {
-        Object.assign(node, attributes);
-        return true;
-      }
-      for (const child of node.children) {
-        if (updateRecursive(child)) return true;
-      }
-      return false;
-    };
-    updateRecursive(newTree);
-    return { tree: newTree };
+    return produce(state, (draft) => {
+      const updateRecursive = (node: CustomTreeNode) => {
+        if (node.id === nodeId) {
+          Object.assign(node, attributes);
+          return true;
+        }
+        return node.children.some(updateRecursive);
+      };
+      updateRecursive(draft.tree);
+    });
   })
 }))

@@ -109,23 +109,15 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   private selectBestChild(node: MCTSNode<S, A>): MCTSNode<S, A> {
     const isMaxPlayer = (node.state as any).playerTurn === 'X';
     
-    return node.children.reduce((best, child) => {
-      const exploitation = child.value / child.visits;
-      const exploration = this.cParam * Math.sqrt(Math.log(node.visits) / child.visits);
-      
-      // Se for o MaxPlayer (X), queremos o maior UCB1. 
-      // Se for o MinPlayer (O), queremos o menor valor de utilidade + exploração.
-      const score = isMaxPlayer 
-        ? exploitation + exploration 
-        : -exploitation + exploration;
+    const getUCB1 = (n: MCTSNode<S, A>) => {
+      const exploitation = n.value / n.visits;
+      const exploration = this.cParam * Math.sqrt(Math.log(node.visits) / n.visits);
+      return isMaxPlayer ? exploitation + exploration : -exploitation + exploration;
+    };
 
-      const bestExploitation = best.value / best.visits;
-      const bestScore = isMaxPlayer 
-        ? bestExploitation + this.cParam * Math.sqrt(Math.log(node.visits) / best.visits)
-        : -bestExploitation + this.cParam * Math.sqrt(Math.log(node.visits) / best.visits);
-
-      return score > bestScore ? child : best;
-    });
+    return node.children.reduce((best, child) => 
+      getUCB1(child) > getUCB1(best) ? child : best
+    );
   }
 
   public getTree(): CustomTreeNode {

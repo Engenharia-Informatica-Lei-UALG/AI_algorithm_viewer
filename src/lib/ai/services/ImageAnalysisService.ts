@@ -26,9 +26,9 @@ export class ImageAnalysisService {
     this.config = config;
   }
 
-  async analyzeImage(imageFile: File): Promise<DetectedState> {
+  async analyzeImage(imageFile: File, promptOverride?: string): Promise<DetectedState> {
     const base64Data = await this.fileToBase64(imageFile);
-    const prompt = this.getPrompt();
+    const prompt = promptOverride || ImageAnalysisService.getPrompt();
 
     try {
       let jsonString = "";
@@ -196,7 +196,7 @@ export class ImageAnalysisService {
 
   // --- Helpers ---
 
-  private getPrompt(): string {
+  public static getPrompt(): string {
     return `
       You are a strict Computer Vision API. Your ONLY task is to extract structured data from the image.
       Output MUST be raw JSON. Do NOT use Markdown formatting (no \`\`\`json). Do NOT add explanations.

@@ -2,13 +2,108 @@
 
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
-import { useGameStore } from "@/store/gameStore"
+import { useGameStore, ProblemType } from "@/store/gameStore"
 import { TreeEditor } from "@/components/editor/TreeEditor"
-import { Save } from "lucide-react"
+import { Save, TreePine, Gamepad2, Puzzle, Sparkles } from "lucide-react"
 import { ImageUploadPanel } from "./ImageUploadPanel"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs"
 import { AlgorithmSelector } from "@/components/ui/AlgorithmSelector"
 import { CustomTreeNode } from "@/types/game"
+
+const JSON_EXAMPLES = {
+  tree: {
+    "id": "node-S",
+    "name": "S",
+    "value": 5,
+    "isGoal": false,
+    "children": [
+      {
+        "id": "node-A",
+        "name": "A",
+        "costToParent": 1,
+        "value": 7,
+        "isGoal": false,
+        "children": [
+          {
+            "id": "node-D",
+            "name": "D",
+            "costToParent": 5,
+            "value": 4,
+            "isGoal": false,
+            "children": [
+              {
+                "id": "node-H-from-D",
+                "name": "H",
+                "costToParent": 2,
+                "value": 6,
+                "isGoal": false,
+                "children": [
+                  {
+                    "id": "node-J-from-H-D",
+                    "name": "J",
+                    "costToParent": 4,
+                    "value": 8,
+                    "isGoal": false,
+                    "children": [
+                      {
+                        "id": "node-G2-from-J-H-D",
+                        "name": "G2",
+                        "costToParent": 2,
+                        "value": 0,
+                        "isGoal": true,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "node-B",
+        "name": "B",
+        "costToParent": 8,
+        "value": 10,
+        "isGoal": false,
+        "children": [
+          {
+            "id": "node-G1-from-B",
+            "name": "G1",
+            "costToParent": 4,
+            "value": 0,
+            "isGoal": true,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  tictactoe: {
+    "type": "tictactoe",
+    "id": "root",
+    "name": "Start",
+    "value": 0,
+    "isGoal": false,
+    "children": [],
+    "boardState": [null, "X", "O", null, null, "O", "X", "O", "X"]
+  },
+  puzzle: {
+    "type": "8puzzle",
+    "id": "root",
+    "name": "Start",
+    "value": 0,
+    "isGoal": false,
+    "children": [
+      { "type": "8puzzle", "id": "node-up", "name": "UP", "value": 0, "isGoal": false, "children": [], "boardState": [6, 0, 7, 8, 4, 1, 3, 5, 2] },
+      { "type": "8puzzle", "id": "node-down", "name": "DOWN", "value": 0, "isGoal": false, "children": [], "boardState": [6, 4, 7, 8, 5, 1, 3, 0, 2] },
+      { "type": "8puzzle", "id": "node-right", "name": "RIGHT", "value": 0, "isGoal": false, "children": [], "boardState": [6, 4, 7, 8, 1, 0, 3, 5, 2] },
+      { "type": "8puzzle", "id": "node-left", "name": "LEFT", "value": 0, "isGoal": false, "children": [], "boardState": [6, 4, 7, 0, 8, 1, 3, 5, 2] }
+    ],
+    "boardState": [6, 4, 7, 8, 0, 1, 3, 5, 2]
+  }
+};
 
 export function EditorPanel() {
   const { tree, updateTree, nodesExplored, depth, setProblemType } = useGameStore()
@@ -22,29 +117,30 @@ export function EditorPanel() {
   const handleLoadJson = () => {
     try {
       const parsed = JSON.parse(jsonInput);
+      let targetTree = parsed;
+      let detectedType: ProblemType = 'custom';
 
-      // Caso 1: JSON direto da árvore (formato antigo/padrão)
-      if (parsed.id && parsed.children) {
-        updateTree(parsed as CustomTreeNode);
-        alert("Árvore carregada com sucesso!");
-        return;
+      // Lógica de Detecção Inteligente
+      if (parsed.tree && parsed.tree.id) {
+        targetTree = parsed.tree;
+        detectedType = parsed.type || 'custom';
+      } else if (parsed.type === 'tictactoe' || parsed.type === '8puzzle') {
+        detectedType = parsed.type;
+      } else if (parsed.boardState && Array.isArray(parsed.boardState)) {
+        // Fallback: detecta pelo conteúdo do boardState se o type estiver ausente
+        const is8Puzzle = parsed.boardState.some((x: any) => typeof x === 'number');
+        detectedType = is8Puzzle ? '8puzzle' : 'tictactoe';
       }
 
-      // Caso 2: JSON gerado pela IA (com wrapper 'tree')
-      if (parsed.tree && parsed.tree.id && parsed.tree.children) {
-        if (parsed.type === 'custom') {
-          setProblemType('custom');
-          setTimeout(() => {
-            updateTree(parsed.tree as CustomTreeNode);
-          }, 50);
-        } else {
-          updateTree(parsed.tree as CustomTreeNode);
-        }
-        alert("Árvore importada da IA carregada com sucesso!");
-        return;
-      }
+      // Aplica o tipo de problema (isso muda a visualização automaticamente)
+      setProblemType(detectedType);
 
-      alert("JSON inválido: Estrutura de árvore incorreta.");
+      // Pequeno delay para garantir que o store processou a mudança de tipo antes da árvore
+      setTimeout(() => {
+        updateTree(targetTree as CustomTreeNode);
+      }, 50);
+
+      alert(`Sucesso! Problema do tipo "${detectedType}" carregado.`);
     } catch (e) {
       alert("Erro ao analisar JSON.");
     }
@@ -76,6 +172,31 @@ export function EditorPanel() {
 
         <TabsContent value="json">
           <div className="flex flex-col gap-2 h-full pb-4">
+            <div className="flex flex-col gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                <Sparkles size={10} /> Exemplos Rápidos
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tree, null, 2))}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
+                >
+                  <TreePine size={12} /> Árvore
+                </button>
+                <button 
+                  onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tictactoe, null, 2))}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
+                >
+                  <Gamepad2 size={12} /> TicTacToe
+                </button>
+                <button 
+                  onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.puzzle, null, 2))}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
+                >
+                  <Puzzle size={12} /> 8-Puzzle
+                </button>
+              </div>
+            </div>
             <textarea
               value={jsonInput}
               onChange={(e) => setJsonInput(e.target.value)}

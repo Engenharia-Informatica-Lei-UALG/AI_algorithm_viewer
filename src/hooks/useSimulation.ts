@@ -36,13 +36,10 @@ export function useSimulation() {
   // O useMemo abaixo tenta capturar apenas mudanças estruturais relevantes.
   const problemStateJson = useMemo(() => {
     if (problemType === 'custom') {
-      // Simplificação: assume que se o ID ou children mudarem, a estrutura mudou.
-      // Evita serializar a árvore inteira a cada render se apenas props visuais mudarem.
-      return JSON.stringify({
-        id: tree.id,
-        childrenCount: tree.children?.length,
-        // Adicione mais propriedades se necessário para detectar mudanças estruturais
-      });
+      // Para árvores customizadas, qualquer mudança na estrutura ou valores (h, g)
+      // deve reiniciar o algoritmo para evitar cálculos baseados em dados obsoletos.
+      // Como a simulação não altera a árvore original em modo 'custom', isso é seguro.
+      return JSON.stringify(tree);
     }
     if (problemType === 'tictactoe' || problemType === '8puzzle') return JSON.stringify(tree.boardState);
     return '';
