@@ -77,7 +77,7 @@ export default function Home() {
             Instagram
           </a>
           <Link
-            href="/docs/json"
+            href="/docs"
             className="hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-bold border-l pl-4"
           >
             <BookOpen size={16} />

@@ -8,7 +8,7 @@ export default function JsonDocsPage() {
         <div className="min-h-screen bg-background p-6 md:p-12 font-sans max-w-4xl mx-auto">
             <header className="mb-12">
                 <Link
-                    href="/public"
+                    href="/"
                     className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-6 font-bold"
                 >
                     <ArrowLeft size={20} />
