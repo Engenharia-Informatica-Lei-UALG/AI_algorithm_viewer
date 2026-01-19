@@ -37,14 +37,18 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 min-h-0 pb-4">
+      <main className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 min-h-0 pb-4 overflow-y-auto">
         <VisualizationPanel
           visxData={visxData}
           onStep={stepForward}
           onStepBack={stepBack}
           onFastForward={fastForward}
         />
-        <EditorPanel />
+        <div className="xl:col-span-3 flex flex-col h-full overflow-hidden gap-4">
+            <div className="flex-1 min-h-0">
+                <EditorPanel />
+            </div>
+        </div>
       </main>
 
       <footer className="mt-auto pt-4 border-t flex justify-between items-center text-muted-foreground shrink-0">

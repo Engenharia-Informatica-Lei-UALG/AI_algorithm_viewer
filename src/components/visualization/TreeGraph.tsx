@@ -81,7 +81,7 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
 
   const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
 
-  // Cálculo robusto de espaçamento: a árvore cresce conforme a complexidade
+  // Cálculo robusto de espaçamento
   const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
   const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
 
@@ -89,22 +89,24 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
   const treeHeight = Math.max(height - 150, root.height * minNodeHeight);
 
   const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs'].includes(algorithm);
+  const isAlphaBeta = algorithm === 'alpha-beta';
 
-  const renderNodeShape = (node: any, isSelected: boolean, isVisited: boolean, isGoal: boolean, isCurrent: boolean) => {
+  const renderNodeShape = (node: any, isSelected: boolean, isVisited: boolean, isGoal: boolean, isCurrent: boolean, isPruned: boolean) => {
     const nodeData = node.data as CustomTreeNode;
     const isViolation = admissibilityViolations.includes(nodeData.id);
 
     if (isGameMode) {
       const boardSize = problemType === 'tictactoe' ? 120 : 100;
       return (
-        <Group>
+        <Group opacity={isPruned ? 0.4 : 1}>
           <foreignObject x={-boardSize / 2} y={-boardSize / 2} width={boardSize} height={boardSize}>
             <div className={cn(
               "w-full h-full flex items-center justify-center rounded-xl border-2 transition-all duration-300 shadow-md p-1",
               isCurrent ? "border-purple-500 bg-purple-500/5 ring-4 ring-purple-500/20" :
                 isGoal ? "border-emerald-500 bg-emerald-500/5 ring-4 ring-emerald-500/20" :
                   isSelected ? "border-orange-500 bg-orange-500/5 shadow-orange-500/20" :
-                    "border-border/60 bg-slate-50/50 dark:bg-slate-900/50"
+                    "border-border/60 bg-slate-50/50 dark:bg-slate-900/50",
+              isPruned && "grayscale border-dashed"
             )}>
               <ProblemVisualizer
                 problemType={problemType}
@@ -115,6 +117,9 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
               />
             </div>
           </foreignObject>
+          {isPruned && (
+             <text y={10} textAnchor="middle" fontSize={40} fill="red" fontWeight="bold" style={{ pointerEvents: 'none' }}>✕</text>
+          )}
         </Group>
       );
     }
@@ -143,11 +148,13 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
           isCurrent ? "text-purple-600 stroke-purple-900" :
             isGoal ? "text-green-500 stroke-green-700" :
               isVisited ? "text-primary/60" :
-                isSelected ? "text-card stroke-orange-500" : "text-card stroke-foreground"
+                isSelected ? "text-card stroke-orange-500" : "text-card stroke-foreground",
+        isPruned && "text-muted-foreground/30 stroke-muted-foreground/30"
       ),
       strokeWidth: isSelected || isCurrent || isViolation ? 6 : (isGoal ? 5 : 3),
       fill: "currentColor",
-      stroke: "currentColor"
+      stroke: "currentColor",
+      strokeDasharray: isPruned ? "5,5" : "none"
     };
 
     if (shape === 'triangle') {
@@ -209,14 +216,16 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                       {tree.links().map((link, i) => {
                         const targetData = link.target.data as CustomTreeNode;
                         const cost = targetData.costToParent;
+                        const isPruned = targetData.isPruned;
 
                         return (
-                          <Group key={`link-group-${i}`}>
+                          <Group key={`link-group-${i}`} opacity={isPruned ? 0.3 : 1}>
                             <LinkVertical
                               data={link}
                               stroke="currentColor"
                               strokeWidth="2.5"
                               fill="none"
+                              strokeDasharray={isPruned ? "5,5" : "none"}
                               className="text-muted-foreground/30"
                             />
                             {cost !== undefined && (
@@ -257,6 +266,7 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                         const isVisited = nodeData.isVisited;
                         const isGoal = nodeData.isGoal;
                         const isCurrent = nodeData.isCurrent;
+                        const isPruned = nodeData.isPruned;
                         const isViolation = admissibilityViolations.includes(nodeData.id);
 
                         return (
@@ -266,9 +276,9 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                             left={node.x}
                             onClick={(e) => handleNodeClick(e, nodeData)}
                             className="cursor-pointer"
-                            filter="url(#shadow)"
+                            filter={isPruned ? undefined : "url(#shadow)"}
                           >
-                            {isGoal && (
+                            {isGoal && !isPruned && (
                               <motion.circle
                                 r={36}
                                 fill="none"
@@ -296,9 +306,10 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                               />
                             )}
 
-                            {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent)}
+                            {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned)}
 
-                            {showHeuristic && nodeData.value !== undefined && (
+                            {/* Heurística / Valor */}
+                            {showHeuristic && nodeData.value !== undefined && !isPruned && (
                               <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
                                 <rect x={-18} y={-12} width={36} height={20} rx={10} fill="currentColor" className="text-foreground" />
                                 <text
@@ -312,6 +323,23 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                                   {nodeViewMode === 'game' ? 'v' : 'h'}:{nodeData.value}
                                 </text>
                               </Group>
+                            )}
+
+                            {/* Alpha-Beta Values */}
+                            {isAlphaBeta && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
+                                <Group y={nodeViewMode === 'game' ? -85 : -50} x={0}>
+                                    <rect x={-35} y={-10} width={70} height={20} rx={4} fill="currentColor" className="text-muted/90 border border-border" />
+                                    <text
+                                        dy=".33em"
+                                        fontSize={9}
+                                        fontWeight="bold"
+                                        textAnchor="middle"
+                                        fill="currentColor"
+                                        className="text-foreground"
+                                    >
+                                        α:{nodeData.alpha === -Infinity ? '-∞' : nodeData.alpha} β:{nodeData.beta === Infinity ? '∞' : nodeData.beta}
+                                    </text>
+                                </Group>
                             )}
                           </Group>
                         );

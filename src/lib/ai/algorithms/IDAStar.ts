@@ -34,18 +34,22 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
   protected initialize(): void {
     this.nodesExplored = 0;
     this.status = SearchStatus.RUNNING;
+    // Inicializa o threshold com a heurística do estado inicial
     this.threshold = this.problem.getHeuristic(this.problem.initialState);
     this.prepareIteration();
   }
 
   private prepareIteration(): void {
     const rootState = this.problem.initialState;
+    const h = this.problem.getHeuristic(rootState);
+    
+    // CORREÇÃO: Passar a heurística real (h), não o threshold
     const rootNode = new NodeImpl<S, A>(
       rootState, 
       null, 
       null, 
       0, 
-      this.threshold, 
+      h, 
       0
     );
     this.stack = [rootNode];
@@ -84,7 +88,9 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
 
     if (f > this.threshold) {
       this.nextThreshold = Math.min(this.nextThreshold, f);
-      return node; // Retorna o nó para visualização mas não expande
+      // Retorna null para indicar que este nó não foi expandido nesta iteração (corte)
+      // Ou retorna o nó mas não expande seus filhos
+      return node; 
     }
 
     this.nodesExplored++;
@@ -96,6 +102,7 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
     }
 
     const actions = this.problem.getActions(node.state);
+    // Ordem inversa para simular DFS corretamente na pilha
     for (let i = actions.length - 1; i >= 0; i--) {
       const action = actions[i];
       const nextState = this.problem.getResult(node.state, action);
@@ -111,6 +118,7 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
           id: `${parentVisual.id}-${action.name}`,
           name: action.name,
           value: h,
+          costToParent: this.problem.getCost(node.state, action, nextState),
           children: [],
           boardState: (nextState as any).board,
           isGoal: this.problem.isGoal(nextState)

@@ -29,16 +29,29 @@ export function useSimulation() {
   const [currentStep, setCurrentStep] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // A árvore customizada só é uma dependência se o problema for 'custom'
-  const customTreeJson = useMemo(() => 
-    problemType === 'custom' ? JSON.stringify(tree) : '',
-    [problemType, tree]
-  );
+  // Detecta mudanças no estado inicial do problema para reinicializar a simulação
+  // Para problemas customizados, queremos que a simulação reinicie se a estrutura da árvore mudar
+  // MAS, se a mudança for apenas visual (ex: isVisited), não devemos reiniciar.
+  // O useMemo abaixo tenta capturar apenas mudanças estruturais relevantes.
+  const problemStateJson = useMemo(() => {
+    if (problemType === 'custom') {
+        // Simplificação: assume que se o ID ou children mudarem, a estrutura mudou.
+        // Evita serializar a árvore inteira a cada render se apenas props visuais mudarem.
+        return JSON.stringify({
+            id: tree.id,
+            childrenCount: tree.children?.length,
+            // Adicione mais propriedades se necessário para detectar mudanças estruturais
+        });
+    }
+    if (problemType === 'tictactoe' || problemType === '8puzzle') return JSON.stringify(tree.boardState);
+    return '';
+  }, [problemType, tree]);
 
   // Inicializa o problema e o algoritmo
   useEffect(() => {
     if (!algorithm) return;
 
+    // Se mudou o algoritmo ou o problema, resetamos o histórico
     setHistory([]);
     setCurrentStep(0);
     setNodesExplored(0);
@@ -75,7 +88,7 @@ export function useSimulation() {
     }
     searchAlgoRef.current = algoInstance;
 
-  }, [algorithm, customTreeJson, resetTrigger, problemType, goalState, setNodesExplored]);
+  }, [algorithm, resetTrigger, problemType, goalState, setNodesExplored, problemStateJson]);
 
   useEffect(() => {
     setNodesExplored(currentStep);
