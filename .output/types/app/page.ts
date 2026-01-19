@@ -1,4 +1,4 @@
-// File: C:\Users\brand\OneDrive\Documentos\GitHub\algorithm_IA\src\app\page.tsx
+// File: C:\Users\brand\OneDrive\Documentos\GitHub\AI_algorithm_viewer\src\app\page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

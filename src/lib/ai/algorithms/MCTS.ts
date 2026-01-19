@@ -1,5 +1,6 @@
 import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
+import { CustomTreeNode } from '@/store/gameStore';
 
 class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
   public visits: number = 0;
@@ -106,11 +107,41 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   }
 
   private selectBestChild(node: MCTSNode<S, A>): MCTSNode<S, A> {
-    // UCB1
+    const isMaxPlayer = (node.state as any).playerTurn === 'X';
+    
     return node.children.reduce((best, child) => {
-      const ucb1 = (child.value / child.visits) + this.cParam * Math.sqrt(Math.log(node.visits) / child.visits);
-      const bestUcb1 = (best.value / best.visits) + this.cParam * Math.sqrt(Math.log(node.visits) / best.visits);
-      return ucb1 > bestUcb1 ? child : best;
+      const exploitation = child.value / child.visits;
+      const exploration = this.cParam * Math.sqrt(Math.log(node.visits) / child.visits);
+      
+      // Se for o MaxPlayer (X), queremos o maior UCB1. 
+      // Se for o MinPlayer (O), queremos o menor valor de utilidade + exploração.
+      const score = isMaxPlayer 
+        ? exploitation + exploration 
+        : -exploitation + exploration;
+
+      const bestExploitation = best.value / best.visits;
+      const bestScore = isMaxPlayer 
+        ? bestExploitation + this.cParam * Math.sqrt(Math.log(node.visits) / best.visits)
+        : -bestExploitation + this.cParam * Math.sqrt(Math.log(node.visits) / best.visits);
+
+      return score > bestScore ? child : best;
     });
+  }
+
+  public getTree(): CustomTreeNode {
+    const convert = (node: MCTSNode<S, A>, id: string): CustomTreeNode => {
+      return {
+        id,
+        name: node.action ? node.action.name : 'Start',
+        value: node.getScore(),
+        boardState: (node.state as any).board,
+        children: node.children.map((child, i) => 
+          convert(child, `${id}-${i}`)
+        ),
+        visits: node.visits // Opcional: para mostrar no tooltip
+      } as any;
+    };
+
+    return convert(this.root!, 'root');
   }
 }

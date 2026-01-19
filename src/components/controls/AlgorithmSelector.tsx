@@ -29,8 +29,8 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon } from "lucide-react"
-import { EightPuzzleBoard } from "../tree-editor/EightPuzzleBoard"
-import { TicTacToeBoard } from "../tree-editor/TicTacToeBoard"
+import { EightPuzzleBoard } from "../game/EightPuzzleBoard"
+import { TicTacToeBoard } from "../game/TicTacToeBoard"
 
 const algorithms = [
   {
@@ -106,13 +106,13 @@ const algorithms = [
 ] as const;
 
 export function AlgorithmSelector() {
-  const { 
-    algorithm, 
-    setAlgorithm, 
-    tree, 
-    maxNodeShape, 
-    minNodeShape, 
-    setMaxNodeShape, 
+  const {
+    algorithm,
+    setAlgorithm,
+    tree,
+    maxNodeShape,
+    minNodeShape,
+    setMaxNodeShape,
     setMinNodeShape,
     setAdmissibilityViolations,
     problemType,
@@ -122,11 +122,11 @@ export function AlgorithmSelector() {
     ticTacToeMaxPlayer,
     setTicTacToeMaxPlayer
   } = useGameStore()
-  
+
   const [isCollapsed, setIsCollapsed] = useState(!!algorithm)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [admissibilityResult, setAdmissibilityResult] = useState<{isAdmissible: boolean, violations: string[]} | null>(null)
+  const [admissibilityResult, setAdmissibilityResult] = useState<{ isAdmissible: boolean, violations: string[] } | null>(null)
   const [goalInput, setGoalInput] = useState(goalState?.join(' ') || "")
   const { t } = useTranslation()
 
@@ -145,7 +145,7 @@ export function AlgorithmSelector() {
   const handleGoalInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     setGoalInput(input);
-    
+
     const numbers = input.split(/\s+/).filter(Boolean).map(Number);
     if (numbers.length === 9 && new Set(numbers).size === 9 && numbers.every(n => n >= 0 && n <= 8)) {
       setGoalState(numbers);
@@ -238,8 +238,8 @@ export function AlgorithmSelector() {
                   onClick={() => setProblemType(type.id as ProblemType)}
                   className={cn(
                     "flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all",
-                    problemType === type.id 
-                      ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                    problemType === type.id
+                      ? "border-primary bg-primary/5 text-primary shadow-sm"
                       : "border-border bg-card hover:border-primary/50 text-muted-foreground"
                   )}
                 >
@@ -254,7 +254,7 @@ export function AlgorithmSelector() {
           {/* Menus de Configuração Específicos */}
           <AnimatePresence mode="wait">
             {problemType === '8puzzle' && (
-              <motion.div 
+              <motion.div
                 key="8puzzle-goal-settings"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -277,7 +277,7 @@ export function AlgorithmSelector() {
             )}
 
             {selectedAlgo.category === 'heuristic' && problemType === 'custom' && (
-              <motion.div 
+              <motion.div
                 key="heuristic-settings"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -303,7 +303,7 @@ export function AlgorithmSelector() {
             )}
 
             {isAdversarial && (problemType === 'custom' || problemType === 'tictactoe') && (
-              <motion.div 
+              <motion.div
                 key="adversarial-settings"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -314,7 +314,7 @@ export function AlgorithmSelector() {
                   <Users size={18} />
                   <h4 className="text-xs font-black uppercase tracking-widest">Configuração Adversarial</h4>
                 </div>
-                
+
                 {problemType === 'tictactoe' && (
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase text-muted-foreground">Jogador Maximizador (MAX)</label>
@@ -346,6 +346,7 @@ export function AlgorithmSelector() {
                           <button
                             key={shape}
                             onClick={() => setMaxNodeShape(shape)}
+                            title={`Set MAX nodes to ${shape} shape`}
                             className={cn(
                               "flex-1 flex items-center justify-center p-2 rounded-md border transition-all",
                               maxNodeShape === shape ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted hover:bg-accent"
@@ -364,6 +365,7 @@ export function AlgorithmSelector() {
                           <button
                             key={shape}
                             onClick={() => setMinNodeShape(shape)}
+                            title={`Set MIN nodes to ${shape} shape`}
                             className={cn(
                               "flex-1 flex items-center justify-center p-2 rounded-md border transition-all",
                               minNodeShape === shape ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted hover:bg-accent"

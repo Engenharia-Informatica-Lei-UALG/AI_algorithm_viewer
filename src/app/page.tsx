@@ -50,18 +50,18 @@ export default function Home() {
       <footer className="mt-auto pt-4 border-t flex justify-between items-center text-muted-foreground shrink-0">
         <p className="text-xs font-medium">© 2026 Algorithm AI Labs</p>
         <div className="flex gap-4">
-          <a 
-            href="https://github.com/kanekitakitos" 
-            target="_blank" 
+          <a
+            href="https://github.com/kanekitakitos"
+            target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-bold"
           >
             <Github size={16} />
             GitHub
           </a>
-          <a 
-            href="https://www.instagram.com/brandonmejia4/" 
-            target="_blank" 
+          <a
+            href="https://www.instagram.com/brandonmejia4/"
+            target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-bold"
           >
@@ -83,6 +83,7 @@ function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string
     isCurrent: node.id === currentNodeId,
     costToParent: node.costToParent,
     isVisited: visitedSet.has(node.id),
+    boardState: node.boardState,
     children: node.children ? node.children.map((c: any) => convertToVisx(c, visitedSet, currentNodeId)) : []
   };
 }

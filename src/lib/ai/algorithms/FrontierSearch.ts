@@ -22,7 +22,7 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
   private frontier: SearchNode<S, A>[] = [];
   private explored: Set<string> = new Set();
   private comparator: NodeComparator<S, A> | null;
-  private nodeMap: Map<string, CustomTreeNode> = new Map(); // Map to build the visual tree
+  private visualNodeMap: Map<SearchNode<S, A>, CustomTreeNode> = new Map(); // Map to build the visual tree
 
   constructor(problem: Problem<S, A>, comparator: NodeComparator<S, A> | null = null) {
     super(problem);
@@ -42,17 +42,17 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
     );
     this.frontier = [rootNode];
     this.explored.clear();
-    this.nodeMap.clear();
+    this.visualNodeMap.clear();
 
     // Create the root of the visual tree
     const visualRoot: CustomTreeNode = {
-      id: rootState.key,
-      name: rootState.key,
+      id: 'root',
+      name: 'Start',
       value: this.problem.getHeuristic(rootState),
       children: [],
       boardState: (rootState as any).board,
     };
-    this.nodeMap.set(rootState.key, visualRoot);
+    this.visualNodeMap.set(rootNode, visualRoot);
   }
 
   step(): SearchNode<S, A> | null {
@@ -94,11 +94,11 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
         );
 
         // Add to visual tree
-        const parentVisualNode = this.nodeMap.get(node.state.key);
+        const parentVisualNode = this.visualNodeMap.get(node);
         if (parentVisualNode) {
           const childVisualNode: CustomTreeNode = {
-            id: nextState.key,
-            name: nextState.key,
+            id: `${parentVisualNode.id}-${action.name}`,
+            name: action.name,
             value: heuristic,
             costToParent: this.problem.getCost(node.state, action, nextState),
             children: [],
@@ -106,7 +106,7 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
             isGoal: this.problem.isGoal(nextState),
           };
           parentVisualNode.children.push(childVisualNode);
-          this.nodeMap.set(nextState.key, childVisualNode);
+          this.visualNodeMap.set(child, childVisualNode);
         }
 
         const existingIndex = this.frontier.findIndex(n => n.state.key === nextState.key);
@@ -124,8 +124,8 @@ export class FrontierSearch<S extends State, A extends Action> extends SearchAlg
   }
 
   public getTree(): CustomTreeNode {
-    // The root is always the first node added to the map
-    return this.nodeMap.get(this.problem.initialState.key)!;
+    // Retorna o primeiro nó visual criado (a raiz)
+    return Array.from(this.visualNodeMap.values())[0];
   }
 
   static createBFS<S extends State, A extends Action>(problem: Problem<S, A>) {

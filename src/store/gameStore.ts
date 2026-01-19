@@ -18,7 +18,24 @@ export interface CustomTreeNode {
   children: CustomTreeNode[];
   isGoal?: boolean;
   costToParent?: number; // Custo da aresta
-  boardState?: any; // Para TicTacToe ou 8-Puzzle
+  boardState?: (string | null)[] | number[] | any; // Para TicTacToe ou 8-Puzzle
+  alpha?: number;
+  beta?: number;
+  isPruned?: boolean; // Indica se este nó/ramo foi cortado
+  pruningTriggeredBy?: string; // ID do nó cujo valor causou o corte
+  isCutoffPoint?: boolean; // Indica se este foi o nó onde o loop parou
+
+  // Propriedades visuais injetadas durante a renderização
+  isVisited?: boolean;
+  isCurrent?: boolean;
+}
+
+export interface SearchSettings {
+  maxDepth: number;
+  mctsIterations: number;
+  mctsExploration: number;
+  useAlphaBeta: boolean;
+  heuristicType: 'default' | 'manhattan' | 'misplaced'; // Exemplo para 8-puzzle
 }
 
 interface GameState {
@@ -41,6 +58,10 @@ interface GameState {
 
   // Estado da Árvore Customizada
   tree: CustomTreeNode
+  selectedNodeId: string | null
+
+  // Configurações de Busca
+  searchSettings: SearchSettings
 
   setAlgorithm: (algo: AlgorithmType) => void
   setProblemType: (type: ProblemType) => void
@@ -48,7 +69,7 @@ interface GameState {
   incrementNodes: () => void
   toggleSimulation: () => void
   reset: () => void
-  
+
   // Ações de Configuração
   setMaxNodeShape: (shape: NodeShape) => void
   setMinNodeShape: (shape: NodeShape) => void
@@ -65,6 +86,8 @@ interface GameState {
   removeNode: (nodeId: string) => void
   updateNodeAttributes: (nodeId: string, attributes: Partial<CustomTreeNode>) => void
   setNodesExplored: (count: number) => void
+  setSelectedNodeId: (id: string | null) => void
+  updateSearchSettings: (settings: Partial<SearchSettings>) => void
 }
 
 const initialTree: CustomTreeNode = {
@@ -81,6 +104,7 @@ export const useGameStore = create<GameState>((set) => ({
   isSimulating: false,
   resetTrigger: 0,
   tree: initialTree,
+  selectedNodeId: null,
   admissibilityViolations: [],
   goalState: [1, 2, 3, 4, 5, 6, 7, 8, 0],
 
@@ -90,9 +114,22 @@ export const useGameStore = create<GameState>((set) => ({
   nodeViewMode: 'shape',
   ticTacToeMaxPlayer: 'X',
 
-  setAlgorithm: (algo) => set({ algorithm: algo, admissibilityViolations: [] }),
-  
+  searchSettings: {
+    maxDepth: 5,
+    mctsIterations: 1000,
+    mctsExploration: 1.414,
+    useAlphaBeta: true,
+    heuristicType: 'default',
+  },
+
+  setAlgorithm: (algo) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+    return { algorithm: algo, admissibilityViolations: [] };
+  }),
+
   setProblemType: (type) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+
     const newNodeViewMode = type === 'custom' ? 'shape' : 'game';
     let newTree: CustomTreeNode;
     let newGoalState: any;
@@ -108,10 +145,10 @@ export const useGameStore = create<GameState>((set) => ({
       newGoalState = null;
     }
 
-    return { 
-      problemType: type, 
+    return {
+      problemType: type,
       tree: newTree,
-      resetTrigger: state.resetTrigger + 1, 
+      resetTrigger: state.resetTrigger + 1,
       goalState: newGoalState,
       nodeViewMode: newNodeViewMode,
       admissibilityViolations: [],
@@ -123,28 +160,47 @@ export const useGameStore = create<GameState>((set) => ({
   setDepth: (depth) => set({ depth }),
   incrementNodes: () => set((state) => ({ nodesExplored: state.nodesExplored + 1 })),
   toggleSimulation: () => set((state) => ({ isSimulating: !state.isSimulating })),
-  
-  reset: () => set((state) => ({ 
-    depth: 0, 
-    nodesExplored: 0, 
+
+  reset: () => set((state) => ({
+    depth: 0,
+    nodesExplored: 0,
     isSimulating: false,
     resetTrigger: state.resetTrigger + 1,
     admissibilityViolations: []
   })),
-  
+
   setNodesExplored: (count) => set({ nodesExplored: count }),
+
+  updateSearchSettings: (settings) => set((state) => ({
+    searchSettings: { ...state.searchSettings, ...settings }
+  })),
+
+  setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
   setMaxNodeShape: (shape) => set({ maxNodeShape: shape }),
   setMinNodeShape: (shape) => set({ minNodeShape: shape }),
   setNodeViewMode: (mode) => set({ nodeViewMode: mode }),
-  setGoalState: (state) => set({ goalState: state }),
-  setTicTacToeMaxPlayer: (player) => set({ ticTacToeMaxPlayer: player }),
+
+  setGoalState: (goal) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+    return { goalState: goal };
+  }),
+
+  setTicTacToeMaxPlayer: (player) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+    return { ticTacToeMaxPlayer: player };
+  }),
 
   setAdmissibilityViolations: (ids) => set({ admissibilityViolations: ids }),
 
-  updateTree: (newTree) => set({ tree: newTree }),
+  updateTree: (newTree) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+    return { tree: newTree };
+  }),
 
   addNode: (parentId, newNode) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+
     const newTree = JSON.parse(JSON.stringify(state.tree));
     const addRecursive = (node: CustomTreeNode) => {
       if (node.id === parentId) {
@@ -161,7 +217,9 @@ export const useGameStore = create<GameState>((set) => ({
   }),
 
   removeNode: (nodeId) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
     if (nodeId === 'root') return state;
+
     const newTree = JSON.parse(JSON.stringify(state.tree));
     const removeRecursive = (node: CustomTreeNode) => {
       const index = node.children.findIndex(c => c.id === nodeId);
@@ -179,6 +237,8 @@ export const useGameStore = create<GameState>((set) => ({
   }),
 
   updateNodeAttributes: (nodeId, attributes) => set((state) => {
+    if (state.isSimulating || state.nodesExplored > 0) return state;
+
     const newTree = JSON.parse(JSON.stringify(state.tree));
     const updateRecursive = (node: CustomTreeNode) => {
       if (node.id === nodeId) {

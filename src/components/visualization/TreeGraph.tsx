@@ -9,8 +9,7 @@ import { motion } from 'framer-motion';
 import { CustomTreeNode, useGameStore, NodeShape } from '@/store/gameStore';
 import { NodeActionMenu } from './NodeActionMenu';
 import { cn } from '@/lib/utils';
-import { TicTacToeBoard } from '../tree-editor/TicTacToeBoard';
-import { EightPuzzleBoard } from '../tree-editor/EightPuzzleBoard';
+import { ProblemVisualizer } from './ProblemVisualizer';
 
 interface TreeGraphProps {
   data: CustomTreeNode & { isCurrent?: boolean };
@@ -19,16 +18,16 @@ interface TreeGraphProps {
 }
 
 export default function TreeGraph({ data, width, height }: TreeGraphProps) {
-  const { 
-    algorithm, 
-    maxNodeShape, 
-    minNodeShape, 
-    admissibilityViolations, 
-    nodeViewMode, 
+  const {
+    algorithm,
+    maxNodeShape,
+    minNodeShape,
+    admissibilityViolations,
+    nodeViewMode,
     problemType,
-    updateNodeAttributes 
+    updateNodeAttributes
   } = useGameStore();
-  
+
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
@@ -68,20 +67,26 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
     if (parentNode) {
       const parentBoard = parentNode.boardState || [1, 2, 3, 4, 5, 6, 7, 8, 0];
       const diffCount = parentBoard.reduce((acc: number, val: number, idx: number) => {
-          return acc + (val !== newBoard[idx] ? 1 : 0);
+        return acc + (val !== newBoard[idx] ? 1 : 0);
       }, 0);
 
       if (diffCount !== 2) {
-          alert("Movimento Inválido! O estado do filho deve ser alcançável com apenas 1 movimento a partir do estado do pai.");
-          return;
+        alert("Movimento Inválido! O estado do filho deve ser alcançável com apenas 1 movimento a partir do estado do pai.");
+        return;
       }
     }
 
     updateNodeAttributes(currentNode.id, { boardState: newBoard });
   };
 
-  const treeWidth = width - 100;
-  const treeHeight = height - 150;
+  const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
+
+  // Cálculo robusto de espaçamento: a árvore cresce conforme a complexidade
+  const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
+  const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
+
+  const treeWidth = Math.max(width - 100, root.leaves().length * minNodeWidth);
+  const treeHeight = Math.max(height - 150, root.height * minNodeHeight);
 
   const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs'].includes(algorithm);
 
@@ -89,28 +94,25 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
     const nodeData = node.data as CustomTreeNode;
     const isViolation = admissibilityViolations.includes(nodeData.id);
 
-    if (nodeViewMode === 'game' && problemType !== 'custom') {
-      const boardSize = problemType === 'tictactoe' ? 110 : 90;
+    if (isGameMode) {
+      const boardSize = problemType === 'tictactoe' ? 120 : 100;
       return (
         <Group>
-          <foreignObject x={-boardSize/2} y={-boardSize/2} width={boardSize} height={boardSize}>
+          <foreignObject x={-boardSize / 2} y={-boardSize / 2} width={boardSize} height={boardSize}>
             <div className={cn(
-              "w-full h-full flex items-center justify-center bg-card rounded-lg border-2 shadow-lg overflow-hidden transition-all",
-              isCurrent ? "border-purple-500 ring-4 ring-purple-500/20" :
-              isGoal ? "border-green-500 ring-4 ring-green-500/20" :
-              isSelected ? "border-orange-500" : "border-border"
+              "w-full h-full flex items-center justify-center rounded-xl border-2 transition-all duration-300 shadow-md p-1",
+              isCurrent ? "border-purple-500 bg-purple-500/5 ring-4 ring-purple-500/20" :
+                isGoal ? "border-emerald-500 bg-emerald-500/5 ring-4 ring-emerald-500/20" :
+                  isSelected ? "border-orange-500 bg-orange-500/5 shadow-orange-500/20" :
+                    "border-border/60 bg-slate-50/50 dark:bg-slate-900/50"
             )}>
-              {problemType === 'tictactoe' && (
-                <TicTacToeBoard board={nodeData.boardState || Array(9).fill(null)} size="md" />
-              )}
-              {problemType === '8puzzle' && (
-                <EightPuzzleBoard 
-                  board={nodeData.boardState || [1,2,3,4,5,6,7,8,0]} 
-                  size="xs" // Corrigido para 'xs'
-                  interactive={true}
-                  onTileClick={(idx) => handle8PuzzleMove(node, idx)}
-                />
-              )}
+              <ProblemVisualizer
+                problemType={problemType}
+                node={nodeData}
+                size="xs"
+                interactive={problemType === '8puzzle'}
+                onEightPuzzleMove={(idx) => handle8PuzzleMove(node, idx)}
+              />
             </div>
           </foreignObject>
         </Group>
@@ -138,10 +140,10 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
       className: cn(
         "cursor-pointer transition-colors duration-300",
         isViolation ? "text-destructive stroke-destructive-foreground" :
-        isCurrent ? "text-purple-600 stroke-purple-900" :
-        isGoal ? "text-green-500 stroke-green-700" :
-        isVisited ? "text-primary/60" :
-        isSelected ? "text-card stroke-orange-500" : "text-card stroke-foreground"
+          isCurrent ? "text-purple-600 stroke-purple-900" :
+            isGoal ? "text-green-500 stroke-green-700" :
+              isVisited ? "text-primary/60" :
+                isSelected ? "text-card stroke-orange-500" : "text-card stroke-foreground"
       ),
       strokeWidth: isSelected || isCurrent || isViolation ? 6 : (isGoal ? 5 : 3),
       fill: "currentColor",
@@ -162,14 +164,20 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-background rounded-xl border-2 border-border shadow-inner transition-colors duration-300">
-      <Zoom width={width} height={height} scaleXMin={1/4} scaleXMax={4} scaleYMin={1/4} scaleYMax={4}>
+      <Zoom width={width} height={height} scaleXMin={1 / 4} scaleXMax={4} scaleYMin={1 / 4} scaleYMax={4}>
         {(zoom) => (
-          <div className="relative cursor-move w-full h-full">
+          <div
+            className="relative w-full h-full overflow-hidden"
+            ref={zoom.containerRef as any}
+            style={{ touchAction: 'none' }}
+          >
             <svg
               width={width}
               height={height}
-              style={{ cursor: zoom.isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
-              ref={zoom.containerRef}
+              className={cn(
+                "w-full h-full",
+                zoom.isDragging ? "cursor-grabbing" : "cursor-grab"
+              )}
               onClick={() => setSelectedNode(null)}
             >
               <defs>
@@ -189,15 +197,19 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                 </filter>
               </defs>
               <rect width={width} height={height} fill="url(#grid)" />
-              
+
               <Group transform={zoom.toString()}>
-                <Tree root={root} size={[treeWidth, treeHeight]}>
+                <Tree
+                  root={root}
+                  size={[treeWidth, treeHeight]}
+                  separation={(a, b) => (a.parent === b.parent ? 1 : 1.5)}
+                >
                   {tree => (
                     <Group top={50} left={50}>
                       {tree.links().map((link, i) => {
                         const targetData = link.target.data as CustomTreeNode;
                         const cost = targetData.costToParent;
-                        
+
                         return (
                           <Group key={`link-group-${i}`}>
                             <LinkVertical
@@ -208,7 +220,7 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                               className="text-muted-foreground/30"
                             />
                             {cost !== undefined && (
-                              <Group 
+                              <Group
                                 className="cursor-pointer"
                                 onClick={(e) => handleEdgeClick(e, targetData)}
                               >
@@ -246,11 +258,11 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                         const isGoal = nodeData.isGoal;
                         const isCurrent = nodeData.isCurrent;
                         const isViolation = admissibilityViolations.includes(nodeData.id);
-                        
+
                         return (
-                          <Group 
-                            key={`node-${i}`} 
-                            top={node.y} 
+                          <Group
+                            key={`node-${i}`}
+                            top={node.y}
                             left={node.x}
                             onClick={(e) => handleNodeClick(e, nodeData)}
                             className="cursor-pointer"
@@ -265,7 +277,7 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                                 strokeDasharray="4 4"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1, rotate: 360 }}
-                                transition={{ 
+                                transition={{
                                   rotate: { duration: 10, repeat: Infinity, ease: "linear" },
                                   default: { duration: 0.3 }
                                 }}
@@ -284,10 +296,10 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
                               />
                             )}
 
-                            {renderNodeShape(node, isSelected, isVisited, isGoal, isCurrent)}
+                            {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent)}
 
                             {showHeuristic && nodeData.value !== undefined && (
-                              <Group y={nodeViewMode === 'game' ? 65 : 40} x={0}>
+                              <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
                                 <rect x={-18} y={-12} width={36} height={20} rx={10} fill="currentColor" className="text-foreground" />
                                 <text
                                   dy=".33em"
@@ -313,11 +325,11 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
         )}
       </Zoom>
 
-      <NodeActionMenu 
-        node={selectedNode} 
-        position={menuPos} 
+      <NodeActionMenu
+        node={selectedNode}
+        position={menuPos}
         mode={menuMode}
-        onClose={() => setSelectedNode(null)} 
+        onClose={() => setSelectedNode(null)}
       />
     </div>
   );

@@ -6,8 +6,9 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
   private maxDepth: number;
   private useAlphaBeta: boolean;
   private tree: CustomTreeNode | null = null;
+  private iterator: Generator<SearchNode<S, A> | null, number, void> | null = null;
 
-  constructor(problem: Problem<S, A>, maxDepth: number = 10, useAlphaBeta: boolean = false) {
+  constructor(problem: Problem<S, A>, maxDepth: number = 3, useAlphaBeta: boolean = false) {
     super(problem);
     this.maxDepth = maxDepth;
     this.useAlphaBeta = useAlphaBeta;
@@ -18,93 +19,128 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     this.status = SearchStatus.RUNNING;
     this.nodesExplored = 0;
     this.tree = {
-      id: this.problem.initialState.key,
-      name: 'root',
+      id: 'root',
+      name: 'Start',
       children: [],
       value: undefined,
       boardState: (this.problem.initialState as any).board,
     };
+    // Inicializa o gerador que controlará a execução passo-a-passo
+    this.iterator = this.minimaxGenerator(this.problem.initialState, -Infinity, Infinity, 0, this.tree!, 'root', 'root', true);
   }
 
   step(): SearchNode<S, A> | null {
     if (this.status !== SearchStatus.RUNNING) return null;
 
-    // Minimax runs to completion in one "step"
-    this.maxValue(this.problem.initialState, -Infinity, Infinity, 0, this.tree);
-    this.status = SearchStatus.COMPLETED;
-    return null; // Minimax doesn't return a single path node
+    const result = this.iterator!.next();
+    if (result.done) {
+      this.status = SearchStatus.COMPLETED;
+      return null;
+    }
+    return result.value;
   }
 
-  private maxValue(state: S, alpha: number, beta: number, depth: number, visualNode: CustomTreeNode): number {
+  private *minimaxGenerator(state: S, alpha: number, beta: number, depth: number, visualNode: CustomTreeNode, alphaId: string, betaId: string, isMax: boolean): Generator<SearchNode<S, A> | null, number, void> {
     this.nodesExplored++;
+    visualNode.alpha = alpha;
+    visualNode.beta = beta;
+
+    // Yield para visualização do nó atual sendo visitado
+    yield {
+      state,
+      depth,
+      pathCost: 0,
+      heuristic: 0,
+      action: null,
+      parent: null,
+      getScore: () => 0
+    };
+
     if (depth >= this.maxDepth || this.problem.isGoal(state)) {
-      const utility = this.problem.getUtility(state, 1);
+      const utility = this.problem.getUtility ? this.problem.getUtility(state, 1) : 0;
       visualNode.value = utility;
       return utility;
     }
 
-    let value = -Infinity;
+    let value = isMax ? -Infinity : Infinity;
     const actions = this.problem.getActions(state);
+    
+    // Variáveis para rastrear a origem do alpha/beta localmente
+    let currentAlphaId = alphaId; 
+    let currentBetaId = betaId;
 
-    for (const action of actions) {
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
       const nextState = this.problem.getResult(state, action);
       
       const childVisualNode: CustomTreeNode = {
-        id: nextState.key,
-        name: nextState.key,
+        id: `${visualNode.id}-${action.name}`,
+        name: action.name,
         children: [],
         boardState: (nextState as any).board,
       };
       visualNode.children.push(childVisualNode);
 
-      value = Math.max(value, this.minValue(nextState, alpha, beta, depth + 1, childVisualNode));
-      
-      if (this.useAlphaBeta) {
-        if (value >= beta) {
-          visualNode.value = value;
-          return value; // Beta cutoff
+      // Chamada recursiva via yield* para manter o controle do gerador
+      const childValue: number = yield* this.minimaxGenerator(
+        nextState, 
+        alpha, 
+        beta, 
+        depth + 1, 
+        childVisualNode, 
+        isMax ? currentAlphaId : alphaId, 
+        isMax ? betaId : currentBetaId,
+        !isMax
+      );
+
+      if (isMax) {
+        if (childValue > value) {
+          value = childValue;
+          currentAlphaId = visualNode.id; // Atualiza quem define o Alpha
         }
-        alpha = Math.max(alpha, value);
+      } else {
+        if (childValue < value) {
+          value = childValue;
+          currentBetaId = visualNode.id; // Atualiza quem define o Beta
+        }
+      }
+
+      if (this.useAlphaBeta) {
+        if (isMax) {
+          if (value >= beta) {
+            this.handlePruning(visualNode, value, betaId, actions, i + 1);
+            return value; // Beta cutoff
+          }
+          alpha = Math.max(alpha, value);
+          visualNode.alpha = alpha;
+        } else {
+          if (value <= alpha) {
+            this.handlePruning(visualNode, value, alphaId, actions, i + 1);
+            return value; // Alpha cutoff
+          }
+          beta = Math.min(beta, value);
+          visualNode.beta = beta;
+        }
       }
     }
     visualNode.value = value;
     return value;
   }
 
-  private minValue(state: S, alpha: number, beta: number, depth: number, visualNode: CustomTreeNode): number {
-    this.nodesExplored++;
-    if (depth >= this.maxDepth || this.problem.isGoal(state)) {
-      const utility = this.problem.getUtility(state, 1);
-      visualNode.value = utility;
-      return utility;
-    }
-
-    let value = Infinity;
-    const actions = this.problem.getActions(state);
-
-    for (const action of actions) {
-      const nextState = this.problem.getResult(state, action);
-
-      const childVisualNode: CustomTreeNode = {
-        id: nextState.key,
-        name: nextState.key,
-        children: [],
-        boardState: (nextState as any).board,
-      };
-      visualNode.children.push(childVisualNode);
-
-      value = Math.min(value, this.maxValue(nextState, alpha, beta, depth + 1, childVisualNode));
-
-      if (this.useAlphaBeta) {
-        if (value <= alpha) {
-          visualNode.value = value;
-          return value; // Alpha cutoff
-        }
-        beta = Math.min(beta, value);
-      }
-    }
+  private handlePruning(visualNode: CustomTreeNode, value: number, triggerId: string, actions: A[], startIndex: number) {
     visualNode.value = value;
-    return value;
+    visualNode.isCutoffPoint = true;
+    visualNode.pruningTriggeredBy = triggerId;
+
+    for (let j = startIndex; j < actions.length; j++) {
+      visualNode.children.push({
+        id: `${visualNode.id}-${actions[j].name}-pruned`,
+        name: actions[j].name,
+        children: [],
+        isPruned: true,
+        pruningTriggeredBy: triggerId
+      });
+    }
   }
 
   public getTree(): CustomTreeNode {

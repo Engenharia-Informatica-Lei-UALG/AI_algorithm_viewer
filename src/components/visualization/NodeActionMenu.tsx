@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2 } from 'lucide-react';
 import { CustomTreeNode, useGameStore } from '@/store/gameStore';
-import { TicTacToeBoard } from '../tree-editor/TicTacToeBoard';
-import { EightPuzzleBoard } from '../tree-editor/EightPuzzleBoard';
+import { TicTacToeBoard } from '../game/TicTacToeBoard';
+import { EightPuzzleBoard } from '../game/EightPuzzleBoard';
 import { cn } from '@/lib/utils';
 
 interface NodeActionMenuProps {
@@ -48,10 +48,10 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         setIsEditingName(false);
         setSelectedTileIndex(null);
       }
-      
+
       if (!isEditingValue) {
-        setEditValue(mode === 'edge' 
-          ? (currentNode.costToParent?.toString() || "1") 
+        setEditValue(mode === 'edge'
+          ? (currentNode.costToParent?.toString() || "1")
           : (currentNode.value?.toString() || "0")
         );
       }
@@ -74,7 +74,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const handleAddChild = () => {
     const id = Math.random().toString(36).substr(2, 9);
     const initialBoard = currentNode.boardState ? [...currentNode.boardState] : undefined;
-    
+
     addNode(currentNode.id, {
       id,
       name: `Node ${id.substr(0, 2)}`,
@@ -99,9 +99,9 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
   const handleSaveName = () => {
     const isGoalName = editName.toLowerCase().trim() === 'goal';
-    updateNodeAttributes(currentNode.id, { 
+    updateNodeAttributes(currentNode.id, {
       name: editName,
-      isGoal: (!isAdversarial && isGoalName) ? true : currentNode.isGoal 
+      isGoal: (!isAdversarial && isGoalName) ? true : currentNode.isGoal
     });
     setIsEditingName(false);
     onClose();
@@ -128,7 +128,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const handleTicTacToeEdit = (index: number) => {
     const currentBoard = currentNode.boardState || Array(9).fill(null);
     const newBoard = [...currentBoard];
-    
+
     if (newBoard[index] === ticTacToeTool) {
       newBoard[index] = null;
     } else {
@@ -151,11 +151,11 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
     const currentBoard = currentNode.boardState || [1, 2, 3, 4, 5, 6, 7, 8, 0];
     const newBoard = [...currentBoard];
-    
+
     const temp = newBoard[selectedTileIndex];
     newBoard[selectedTileIndex] = newBoard[index];
     newBoard[index] = temp;
-    
+
     updateNodeAttributes(currentNode.id, { boardState: newBoard });
     setSelectedTileIndex(null);
   };
@@ -184,17 +184,17 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         <div className="flex items-center justify-between px-2 py-1 border-b mb-1">
           {isEditingName ? (
             <div className="flex gap-1 items-center w-full mr-2">
-              <input 
+              <input
                 autoFocus
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 className="w-full bg-background border rounded px-1 text-xs h-6"
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
               />
-              <button onClick={handleSaveName} className="text-primary"><Check size={14}/></button>
+              <button onClick={handleSaveName} className="text-primary"><Check size={14} /></button>
             </div>
           ) : (
-            <span 
+            <span
               className="text-xs font-bold truncate cursor-pointer hover:text-primary"
               onClick={() => mode === 'node' && setIsEditingName(true)}
               title="Clique para renomear"
@@ -219,28 +219,28 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
             {problemType === 'tictactoe' && (
               <div className="flex flex-col items-center gap-3">
                 <div className="flex justify-center gap-2 bg-muted p-1 rounded-lg border">
-                  <button 
+                  <button
                     onClick={() => setTicTacToeTool('X')}
-                    className={cn("w-8 h-8 flex items-center justify-center rounded-md font-black text-xl transition-all", 
+                    className={cn("w-8 h-8 flex items-center justify-center rounded-md font-black text-xl transition-all",
                       ticTacToeTool === 'X' ? 'bg-blue-500 text-white shadow-sm ring-2 ring-offset-1 ring-blue-500' : 'bg-background text-blue-500'
                     )}
                   >X</button>
-                  <button 
+                  <button
                     onClick={() => setTicTacToeTool('O')}
-                    className={cn("w-8 h-8 flex items-center justify-center rounded-md font-black text-xl transition-all", 
+                    className={cn("w-8 h-8 flex items-center justify-center rounded-md font-black text-xl transition-all",
                       ticTacToeTool === 'O' ? 'bg-red-500 text-white shadow-sm ring-2 ring-offset-1 ring-red-500' : 'bg-background text-red-500'
                     )}
                   >O</button>
-                  <button 
+                  <button
                     onClick={() => setTicTacToeTool(null)}
-                    className={cn("w-8 h-8 flex items-center justify-center rounded-md transition-all", 
+                    className={cn("w-8 h-8 flex items-center justify-center rounded-md transition-all",
                       ticTacToeTool === null ? 'bg-foreground text-background shadow-sm ring-2 ring-offset-1 ring-foreground' : 'bg-background text-muted-foreground'
                     )}
                   ><MousePointer2 size={16} /></button>
                 </div>
-                <TicTacToeBoard 
-                  board={currentNode.boardState || Array(9).fill(null)} 
-                  size="sm" 
+                <TicTacToeBoard
+                  board={currentNode.boardState || Array(9).fill(null)}
+                  size="sm"
                   interactive={true}
                   onCellClick={handleTicTacToeEdit}
                 />
@@ -249,9 +249,9 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
             {problemType === '8puzzle' && (
               <div className="flex flex-col items-center gap-2 w-full">
-                <EightPuzzleBoard 
-                  board={currentNode.boardState || [1,2,3,4,5,6,7,8,0]} 
-                  size="sm" 
+                <EightPuzzleBoard
+                  board={currentNode.boardState || [1, 2, 3, 4, 5, 6, 7, 8, 0]}
+                  size="sm"
                   interactive={true}
                   highlightIndex={selectedTileIndex}
                   onTileClick={handle8PuzzleEdit}
@@ -272,7 +272,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
               {mode === 'edge' ? 'Custo da Aresta (g)' : 'Valor da Heurística (h)'}
             </label>
             <div className="flex gap-1">
-              <input 
+              <input
                 autoFocus
                 type="number"
                 value={editValue}
@@ -280,7 +280,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
                 className="w-full bg-background border rounded px-2 py-1 text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveValue()}
               />
-              <button 
+              <button
                 onClick={handleSaveValue}
                 className="bg-primary text-primary-foreground p-1 rounded hover:bg-primary/90"
               >
@@ -292,16 +292,16 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
           <>
             {mode === 'node' && (
               <>
-                <button 
+                <button
                   onClick={handleAddChild}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
                 >
                   <Plus size={16} className="text-primary" />
                   <span>Adicionar Filho</span>
                 </button>
-                
+
                 {isGameProblem && (
-                  <button 
+                  <button
                     onClick={() => setIsEditingBoard(true)}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
                   >
@@ -311,7 +311,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
                 )}
 
                 {problemType === 'custom' && !isAdversarial && (
-                  <button 
+                  <button
                     onClick={toggleGoal}
                     className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${currentNode.isGoal ? 'bg-green-500/10 text-green-600 hover:bg-green-500/20' : 'hover:bg-accent'}`}
                   >
@@ -321,9 +321,9 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
                 )}
               </>
             )}
-            
+
             {(problemType === 'custom' || isAdversarial) && (
-              <button 
+              <button
                 onClick={() => setIsEditingValue(true)}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
               >
@@ -333,7 +333,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
             )}
 
             {!isRoot && mode === 'node' && (
-              <button 
+              <button
                 onClick={handleRemove}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-md transition-colors"
               >

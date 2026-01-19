@@ -31,7 +31,10 @@ export abstract class SearchAlgorithm<S extends State, A extends Action> {
     
     while (this.status === SearchStatus.RUNNING) {
       result = this.step();
-      if (result || this.status === SearchStatus.FAILED) break;
+      // The step can change the status to COMPLETED or FAILED.
+      // If the status is no longer RUNNING, we should exit the loop.
+      // The 'result' check is implicit in the status change.
+      if (this.status !== SearchStatus.RUNNING) break;
     }
     
     return result;
