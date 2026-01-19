@@ -1,6 +1,6 @@
 import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
-import { CustomTreeNode } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
 
 class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
   public visits: number = 0;

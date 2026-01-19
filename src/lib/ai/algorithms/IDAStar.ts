@@ -1,6 +1,6 @@
 import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
-import { CustomTreeNode } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
 
 class NodeImpl<S extends State, A extends Action> implements SearchNode<S, A> {
   constructor(

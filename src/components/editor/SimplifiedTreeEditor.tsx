@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useGameStore, CustomTreeNode } from '@/store/gameStore';
-import { TicTacToeBoard } from '../game/TicTacToeBoard';
-import { EightPuzzleBoard } from '../game/EightPuzzleBoard';
+import { useGameStore } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
+import { TicTacToeBoard, EightPuzzleBoard } from '../game/Boards';
 import { ChevronRight, ChevronDown, Plus, Trash2, Target, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

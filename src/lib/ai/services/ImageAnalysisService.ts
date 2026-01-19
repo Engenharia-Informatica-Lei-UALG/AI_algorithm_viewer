@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, InlineDataPart } from "@google/generative-ai";
 import { TicTacToe } from '../problems/TicTacToe';
 import { EightPuzzle } from '../problems/EightPuzzle';
-import { CustomTreeNode } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
 
 // Tipos de resposta
 type DetectedState = 

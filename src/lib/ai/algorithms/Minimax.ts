@@ -1,6 +1,6 @@
 import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
-import { CustomTreeNode } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
 
 export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<S, A> {
   private maxDepth: number;
