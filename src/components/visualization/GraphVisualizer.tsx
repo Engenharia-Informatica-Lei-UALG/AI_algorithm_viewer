@@ -6,6 +6,7 @@ import { useGameStore } from '@/store/gameStore';
 import { CustomTreeNode } from '@/types/game';
 import { Zoom } from '@visx/zoom';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface GraphVisualizerProps {
   data: CustomTreeNode;
@@ -32,6 +33,7 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
 }
 
 function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
   const { admissibilityViolations } = useGameStore();
@@ -101,7 +103,12 @@ function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
     svg.selectAll<SVGGElement, GraphNode>(".nodes g circle")
       .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor")))
       .attr("stroke-width", d => d.isViolation ? 4 : 3)
-      .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "var(--card)")));
+      .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))")));
+
+    // Reinicia levemente a simulação para garantir que o loop 'ticked' pegue as mudanças de cor
+    if (simulationRef.current) {
+      simulationRef.current.alpha(0.1).restart();
+    }
 
   }, [admissibilityViolations, nodes]);
 
@@ -230,10 +237,10 @@ function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
         .attr("r", 25)
         .attr("stroke-width", 3);
 
-      // Atualização inicial de cores (será sobrescrita pelo useEffect de violação)
       nodeSelection.merge(nodeEnter).select("circle")
-        .attr("fill", d => d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "var(--card)"))
-        .attr("stroke", d => d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor"));
+        .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))")))
+        .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor")))
+        .attr("stroke-width", d => d.isViolation ? 4 : 3);
 
       nodeEnter.append("text")
         .attr("dy", 6)
@@ -303,7 +310,7 @@ function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
       </Zoom>
 
       <div className="absolute top-4 right-4 bg-background/80 backdrop-blur p-2 rounded border text-xs text-muted-foreground">
-        Modo Grafo (Force-Directed)
+        {t('graph_mode')}
       </div>
     </div>
   );

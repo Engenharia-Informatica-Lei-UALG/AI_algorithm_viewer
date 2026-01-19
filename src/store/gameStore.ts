@@ -50,6 +50,7 @@ interface GameState {
 
   // Ações de Admissibilidade
   setAdmissibilityViolations: (ids: string[]) => void
+  toggleAdmissibility: () => void
 
   // Ações de Edição da Árvore
   updateTree: (newTree: CustomTreeNode) => void
@@ -179,6 +180,36 @@ export const useGameStore = create<GameState>((set) => ({
   }),
 
   setAdmissibilityViolations: (ids) => set({ admissibilityViolations: ids }),
+
+  toggleAdmissibility: () => set((state) => {
+    // Se já houver violações sendo exibidas, limpa (toggle off) para remover a animação
+    if (state.admissibilityViolations.length > 0) {
+      return { admissibilityViolations: [] };
+    }
+
+    // Caso contrário, calcula as violações
+    const violations: string[] = [];
+    const checkRecursive = (node: CustomTreeNode) => {
+      if (!node.children) return;
+      
+      for (const child of node.children) {
+        const hCurrent = node.value || 0;
+        const hChild = child.value || 0;
+        const cost = child.costToParent ?? 1; // Assume custo 1 se não definido, para evitar falsos positivos
+
+        // Violação se a heurística do pai for maior que o custo real + heurística do filho
+        if (hCurrent > cost + hChild) {
+          if (!violations.includes(node.id)) {
+            violations.push(node.id);
+          }
+        }
+        checkRecursive(child);
+      }
+    };
+
+    checkRecursive(state.tree);
+    return { admissibilityViolations: violations };
+  }),
 
   updateTree: (newTree) => set((state) => {
     if (state.isSimulating) return state;

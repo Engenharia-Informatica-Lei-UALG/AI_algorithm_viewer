@@ -4,8 +4,10 @@ import { CustomTreeNode } from '@/types/game';
 import { TicTacToeBoard, EightPuzzleBoard } from '../game/Boards';
 import { ChevronRight, ChevronDown, Plus, Trash2, Target, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, depth }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const { 
     problemType, algorithm, addNode, removeNode, updateNodeAttributes, 
@@ -18,7 +20,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
     e.stopPropagation();
     addNode(node.id, {
       id: `node-${Math.random().toString(36).substr(2, 9)}`,
-      name: `Move ${node.children.length + 1}`,
+      name: `${t('editor.move_prefix')} ${node.children.length + 1}`,
       children: [],
       boardState: node.boardState ? [...node.boardState] : undefined,
       value: 0
@@ -36,7 +38,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
   };
 
   const isAdversarial = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
-  const valueLabel = isAdversarial ? 'Utility' : 'Heuristic';
+  const valueLabel = isAdversarial ? t('editor.utility') : t('editor.heuristic');
 
   return (
     <div className="flex flex-col border-l border-border/30 ml-2">
@@ -79,7 +81,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
               onChange={(e) => updateNodeAttributes(node.id, { value: Number(e.target.value) })}
               disabled={isLocked}
             />
-            {node.costToParent && <span>Custo: {node.costToParent}</span>}
+            {node.costToParent && <span>{t('editor.cost')}: {node.costToParent}</span>}
           </div>
         </div>
 
@@ -88,15 +90,15 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
             <button 
               onClick={() => updateNodeAttributes(node.id, { isGoal: !node.isGoal })}
               className={cn("p-1 rounded hover:bg-background", node.isGoal ? "text-yellow-500" : "text-muted-foreground")}
-              title="Marcar como Objetivo"
+              title={t('editor.is_goal')}
             >
               <Target size={14} />
             </button>
-            <button onClick={handleAddChild} className="p-1 rounded hover:bg-background text-green-500" title="Adicionar Filho">
+            <button onClick={handleAddChild} className="p-1 rounded hover:bg-background text-green-500" title={t('editor.add_child')}>
               <Plus size={14} />
             </button>
             {node.id !== 'root' && (
-              <button onClick={() => removeNode(node.id)} className="p-1 rounded hover:bg-background text-destructive" title="Remover">
+              <button onClick={() => removeNode(node.id)} className="p-1 rounded hover:bg-background text-destructive" title={t('editor.remove_node')}>
                 <Trash2 size={14} />
               </button>
             )}
@@ -112,21 +114,22 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
 };
 
 export const SimplifiedTreeEditor: React.FC = () => {
+  const { t } = useTranslation();
   const tree = useGameStore(state => state.tree);
   
   return (
     <div className="h-full flex flex-col bg-card border rounded-xl overflow-hidden shadow-sm">
       <div className="p-3 border-b bg-muted/30 flex justify-between items-center">
-        <h3 className="text-sm font-semibold">Estrutura da Busca</h3>
+        <h3 className="text-sm font-semibold">{t('editor.structure_title')}</h3>
         <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
-          Editor
+          {t('editor.badge')}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
         <TreeItem node={tree} depth={0} />
       </div>
       <div className="p-3 bg-muted/10 border-t text-[10px] text-muted-foreground italic">
-        Dica: No Tic-Tac-Toe, clique nas células do mini-tabuleiro para alternar entre X e O.
+        {t('editor.tictactoe_hint')}
       </div>
     </div>
   );

@@ -56,7 +56,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-auto pt-4 border-t flex justify-between items-center text-muted-foreground shrink-0">
-        <p className="text-xs font-medium">© 2026 Algorithm AI Labs</p>
+        <p className="text-xs font-medium">{t('footer_text')}</p>
         <div className="flex gap-4">
           <a
             href="https://github.com/kanekitakitos"
@@ -81,7 +81,7 @@ export default function Home() {
             className="hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-bold border-l pl-4"
           >
             <BookOpen size={16} />
-            Documentação JSON
+            {t('docs_link')}
           </Link>
         </div>
       </footer>

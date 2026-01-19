@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
 import { ImageAnalysisService, LLMProvider } from "@/lib/ai/services/ImageAnalysisService"
 import { useGameStore, AlgorithmType } from "@/store/gameStore"
+import { CustomTreeNode } from "@/types/game"
 import { Upload, Loader2, Key, Settings2, Copy, Check, Server, Box } from "lucide-react"
 
 export function ImageUploadPanel() {
@@ -78,28 +79,53 @@ export function ImageUploadPanel() {
       const result = await service.analyzeImage(file)
 
       if (result) {
-        const jsonStr = JSON.stringify(result, null, 2);
-        setGeneratedJson(jsonStr);
-        localStorage.setItem("last_analysis_json", jsonStr);
-
         if (selectedAlgo) setAlgorithm(selectedAlgo)
 
-        if (result.type === 'tictactoe') {
+        let finalTreeForDisplay: CustomTreeNode | any = result;
+
+        const resultType = result.type ? result.type.toLowerCase().trim() : '';
+
+        if (resultType === 'tictactoe') {
             setProblemType('tictactoe')
+            // Aceita boardState (correto) ou board (fallback caso a IA erre)
+            const boardData = result.boardState || (result as any).board || Array(9).fill(null);
+            
+            finalTreeForDisplay = { 
+              id: 'root', 
+              name: 'Start', 
+              children: [], 
+              boardState: boardData 
+            };
+
             setTimeout(() => {
-                updateTree({ id: 'root', name: 'Start', children: [], boardState: result.board });
+                updateTree(finalTreeForDisplay);
             }, 100);
-        } else if (result.type === '8puzzle') {
+        } else if (resultType === '8puzzle') {
              setProblemType('8puzzle')
+             const boardData = result.boardState || (result as any).board || [1, 2, 3, 4, 5, 6, 7, 8, 0];
+             
+             finalTreeForDisplay = { 
+               id: 'root', 
+               name: 'Start', 
+               children: [], 
+               boardState: boardData 
+             };
+
              setTimeout(() => {
-                updateTree({ id: 'root', name: 'Start', children: [], boardState: result.board });
+                updateTree(finalTreeForDisplay);
              }, 100);
-        } else if (result.type === 'custom') {
+        } else if (resultType === 'custom') {
             setProblemType('custom')
+            finalTreeForDisplay = result.tree;
             setTimeout(() => {
                 updateTree(result.tree);
             }, 100);
         }
+
+        // Exibe o JSON da árvore final (compatível com o editor) em vez do resultado bruto da IA
+        const jsonStr = JSON.stringify(finalTreeForDisplay, null, 2);
+        setGeneratedJson(jsonStr);
+        localStorage.setItem("last_analysis_json", jsonStr);
       } else {
         setError("Não foi possível identificar o problema na imagem.")
       }

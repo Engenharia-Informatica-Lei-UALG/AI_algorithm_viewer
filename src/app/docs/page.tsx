@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import { ArrowLeft, Code2, FileJson, Parentheses, TreePine, Gamepad2, Puzzle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 export default function JsonDocsPage() {
+    const { t } = useTranslation()
     return (
         <div className="min-h-screen bg-background p-6 md:p-12 font-sans max-w-4xl mx-auto">
             <header className="mb-12">
@@ -12,14 +14,14 @@ export default function JsonDocsPage() {
                     className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-6 font-bold"
                 >
                     <ArrowLeft size={20} />
-                    Voltar para o Laboratório
+                    {t('docs.back')}
                 </Link>
                 <h1 className="text-4xl md:text-5xl font-black tracking-tight text-primary mb-4 flex items-center gap-4">
                     <FileJson size={48} />
-                    Documentação JSON
+                    {t('docs.title')}
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                    Compreenda a estrutura de dados que alimenta a visualização e os algoritmos do Algorithm AI Labs.
+                    {t('docs.intro')}
                 </p>
             </header>
 
@@ -28,10 +30,10 @@ export default function JsonDocsPage() {
                 <section className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
                         <TreePine className="text-primary" />
-                        <h2 className="text-2xl font-bold">Estrutura do Nó (CustomTreeNode)</h2>
+                        <h2 className="text-2xl font-bold">{t('docs.node_struct_title')}</h2>
                     </div>
                     <p className="text-muted-foreground">
-                        A árvore é composta por nós recursivos. Cada nó possui propriedades que definem tanto o comportamento do algoritmo quanto a visualização.
+                        {t('docs.node_struct_desc')}
                     </p>
 
                     <div className="bg-muted p-6 rounded-xl font-mono text-sm overflow-x-auto border">
@@ -52,21 +54,19 @@ export default function JsonDocsPage() {
                     <div className="p-6 rounded-xl border bg-card/50">
                         <h3 className="font-bold mb-2 flex items-center gap-2">
                             <Code2 size={18} className="text-primary" />
-                            Identificadores e Nomes
+                            {t('docs.identifiers_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                            O <code className="text-primary">id</code> deve ser único em toda a árvore para evitar bugs de renderização.
-                            O <code className="text-primary">name</code> é usado apenas para exibição e busca.
+                            {t('docs.identifiers_desc')}
                         </p>
                     </div>
                     <div className="p-6 rounded-xl border bg-card/50">
                         <h3 className="font-bold mb-2 flex items-center gap-2">
                             <Parentheses size={18} className="text-primary" />
-                            Valores e Heurísticas
+                            {t('docs.values_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                            O campo <code className="text-primary">value</code> é vital para algoritmos como **A*** (heurística h(n))
-                            e **Minimax** (valor de utilidade/score).
+                            {t('docs.values_desc')}
                         </p>
                     </div>
                 </section>
@@ -75,7 +75,7 @@ export default function JsonDocsPage() {
                 <section className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
                         <Gamepad2 className="text-primary" />
-                        <h2 className="text-2xl font-bold">Especificidades por Problema</h2>
+                        <h2 className="text-2xl font-bold">{t('docs.problem_specifics')}</h2>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -109,17 +109,15 @@ export default function JsonDocsPage() {
 
                 {/* Export/Import Tips */}
                 <section className="p-8 rounded-2xl bg-primary/5 border-2 border-primary/20">
-                    <h2 className="text-xl font-bold mb-4">Dica de Produtividade</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('docs.productivity_tip')}</h2>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                        Você pode copiar o JSON diretamente da aba <strong>JSON</strong> no editor do projeto, modificá-lo e colá-lo
-                        novamente para criar estruturas complexas rapidamente. A validação é feita automaticamente
-                        ao carregar o JSON.
+                        {t('docs.productivity_desc')}
                     </p>
                 </section>
             </main>
 
             <footer className="mt-20 pt-8 border-t text-center text-muted-foreground text-sm pb-12">
-                Brandon Mejia — Desenvolvido com foco em educação e IA.
+                {t('docs.footer')}
             </footer>
         </div>
     )

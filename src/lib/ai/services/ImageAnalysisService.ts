@@ -5,8 +5,8 @@ import { CustomTreeNode } from '@/types/game';
 
 // Tipos de resposta
 type DetectedState = 
-  | { type: 'tictactoe'; board: (string | null)[] }
-  | { type: '8puzzle'; board: number[] }
+  | { type: 'tictactoe'; boardState: (string | null)[]; id: string; name: string; children: any[]; value: number; isGoal: boolean }
+  | { type: '8puzzle'; boardState: number[]; id: string; name: string; children: any[]; value: number; isGoal: boolean }
   | { type: 'custom'; tree: CustomTreeNode } 
   | null;
 
@@ -198,34 +198,51 @@ export class ImageAnalysisService {
 
   private getPrompt(): string {
     return `
-      Analyze the provided image with extreme attention to structural and numerical details.
-      Identify if the image represents a game (Tic-Tac-Toe, 8-Puzzle) or a Search Graph/Tree.
+      You are a strict Computer Vision API. Your ONLY task is to extract structured data from the image.
+      Output MUST be raw JSON. Do NOT use Markdown formatting (no \`\`\`json). Do NOT add explanations.
 
-      Return ONLY a valid JSON following strictly one of the structures below:
+      Analyze the image and match it to one of the following 3 schemas exactly.
 
-      CASE 1: Tic-Tac-Toe
-      { "type": "tictactoe", "board": ["X", null, "O", ...] } (array of 9 positions, null for empty)
+      --- SCHEMA 1: Tic-Tac-Toe ---
+      If the image shows a 3x3 grid with X and O:
+      Return exactly this COMPLETE JSON structure with all node properties:
+      { 
+        "type": "tictactoe", 
+        "id": "root",
+        "name": "Start",
+        "value": 0,
+        "isGoal": false,
+        "children": [],
+        "boardState": ["X", null, "O", "X", null, null, "O", null, null]
+      }
+      Rule: Use null for empty cells. Array length must be 9.
 
-      CASE 2: 8-Puzzle
-      { "type": "8puzzle", "board": [1, 2, 3, 8, 0, 4, 7, 6, 5] } (0 represents the empty space)
+      --- SCHEMA 2: 8-Puzzle ---
+      If the image shows a 3x3 sliding tile puzzle with numbers:
+      Return exactly this COMPLETE JSON structure with all node properties:
+      { 
+        "type": "8puzzle", 
+        "id": "root",
+        "name": "Start",
+        "value": 0,
+        "isGoal": false,
+        "children": [],
+        "boardState": [1, 2, 3, 8, 0, 4, 7, 6, 5]
+      }
+      Rule: Use 0 for the empty space. Array length must be 9.
 
-      CASE 3: Graph or Search Tree (For algorithms like A*, Minimax, UCS, etc.)
+      --- SCHEMA 3: Search Graph / Tree ---
+      If the image shows nodes and edges (circles/squares connected by lines):
+      Return exactly this recursive JSON structure:
       { 
         "type": "custom", 
         "tree": {
-            "id": "root", 
-            "name": "S", 
-            "value": 10, 
-            "isGoal": false, 
+            "id": "root",
+            "name": "S",
+            "value": 10,
+            "isGoal": false,
             "children": [
-                { 
-                    "id": "child1", 
-                    "name": "A", 
-                    "costToParent": 5, 
-                    "value": 4,
-                    "isGoal": false,
-                    "children": [] 
-                }
+                { "id": "child1", "name": "A", "costToParent": 5, "value": 4, "isGoal": false, "children": [] }
             ]
         }
       }
@@ -235,9 +252,8 @@ export class ImageAnalysisService {
       2. **Heuristic/Value (h):** Look for numbers written inside or very close to the nodes. Assign to 'value'.
       3. **Goal:** Identify destination nodes (double circles, filled, or text 'G'/'Goal') and set "isGoal": true.
       4. **CYCLES & CONNECTIONS (Crucial):** 
-         - If a node connects to an EXISTING node (e.g., A -> B -> A), **YOU MUST CREATE A CHILD NODE** representing that connection.
-         - **Do not omit connections.** Even if the node was already visited, include it as a leaf node to show the graph structure.
-      5. **IDs:** Generate unique IDs for every node instance (e.g., "node-A-1", "node-A-2").
+         - If a node connects to an EXISTING node (e.g., A -> B -> A), create a NEW child node instance representing that connection.
+      5. **IDs:** Generate unique IDs for every node object (e.g., "node-A-1", "node-A-2") to avoid rendering collisions.
     `;
   }
 
@@ -256,8 +272,8 @@ export class ImageAnalysisService {
 
   createProblemFromAnalysis(result: DetectedState) {
     if (!result) return null;
-    if (result.type === 'tictactoe') return new TicTacToe(result.board);
-    if (result.type === '8puzzle') return new EightPuzzle(result.board);
+    if (result.type === 'tictactoe') return new TicTacToe(result.boardState);
+    if (result.type === '8puzzle') return new EightPuzzle(result.boardState);
     return null; 
   }
 }

@@ -6,6 +6,7 @@ import { TicTacToeBoard, EightPuzzleBoard } from "../game/Boards"
 import { useState } from "react"
 import { RotateCcw, MousePointer2, Plus, Trash2, Edit2, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 // --- TREE NODE ITEM COMPONENT ---
 
@@ -24,6 +25,7 @@ export function TreeNodeItem({
   onUpdate,
   isRoot = false
 }: TreeNodeItemProps) {
+  const { t } = useTranslation()
   const [isEditing, setIsEditing] = useState(false)
 
   const [name, setName] = useState(node.name)
@@ -35,7 +37,7 @@ export function TreeNodeItem({
     const id = Math.random().toString(36).substr(2, 9);
     onAdd(node.id, {
       id,
-      name: `Node ${id.substr(0, 2)}`,
+      name: `${t('editor.move_prefix')} ${id.substr(0, 2)}`,
       value: 0,
       children: [],
       costToParent: 1,
@@ -65,7 +67,7 @@ export function TreeNodeItem({
           {isEditing ? (
             <div className="space-y-2 text-xs">
               <div className="flex items-center gap-2">
-                <label className="w-10">Nome:</label>
+                <label className="w-10">{t('editor.node_name')}:</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -73,7 +75,7 @@ export function TreeNodeItem({
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="w-10">Heur(h):</label>
+                <label className="w-10">{t('editor.heuristic')}:</label>
                 <input
                   type="number"
                   value={value}
@@ -83,7 +85,7 @@ export function TreeNodeItem({
               </div>
               {!isRoot && (
                 <div className="flex items-center gap-2">
-                  <label className="w-10">Custo(g):</label>
+                  <label className="w-10">{t('editor.cost')}:</label>
                   <input
                     type="number"
                     value={cost}
@@ -99,7 +101,7 @@ export function TreeNodeItem({
                     checked={isGoal}
                     onChange={(e) => setIsGoal(e.target.checked)}
                   />
-                  <span>É Objetivo?</span>
+                  <span>{t('editor.is_goal')}</span>
                 </label>
               </div>
 
@@ -112,8 +114,8 @@ export function TreeNodeItem({
             <div className="flex items-center gap-2">
               <span className="font-mono text-sm font-bold">{node.name}</span>
               <div className="flex gap-1 text-[10px] text-muted-foreground">
-                <span className="bg-background px-1 rounded border" title="Heurística">h={node.value}</span>
-                {!isRoot && <span className="bg-background px-1 rounded border" title="Custo do Pai">g={node.costToParent}</span>}
+                <span className="bg-background px-1 rounded border" title={t('editor.heuristic')}>h={node.value}</span>
+                {!isRoot && <span className="bg-background px-1 rounded border" title={t('editor.cost')}>g={node.costToParent}</span>}
                 {node.isGoal && <span className="bg-green-500 text-white px-1 rounded font-bold">GOAL</span>}
               </div>
             </div>
@@ -122,14 +124,14 @@ export function TreeNodeItem({
 
         {!isEditing && (
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pt-1">
-            <button onClick={() => setIsEditing(true)} className="p-1 hover:bg-accent rounded" title="Editar">
+            <button onClick={() => setIsEditing(true)} className="p-1 hover:bg-accent rounded" title={t('editor.edit_node')}>
               <Edit2 size={14} />
             </button>
-            <button onClick={handleAdd} className="p-1 hover:bg-accent rounded" title="Adicionar Filho">
+            <button onClick={handleAdd} className="p-1 hover:bg-accent rounded" title={t('editor.add_child')}>
               <Plus size={14} />
             </button>
             {!isRoot && (
-              <button onClick={() => onRemove(node.id)} className="p-1 hover:bg-destructive/20 text-destructive rounded" title="Remover">
+              <button onClick={() => onRemove(node.id)} className="p-1 hover:bg-destructive/20 text-destructive rounded" title={t('editor.remove_node')}>
                 <Trash2 size={14} />
               </button>
             )}
@@ -155,6 +157,7 @@ export function TreeNodeItem({
 // --- MAIN TREE EDITOR COMPONENT ---
 
 export function TreeEditor() {
+  const { t } = useTranslation()
   const { tree, addNode, removeNode, updateNodeAttributes, problemType } = useGameStore()
 
   const [ticTacToeTool, setTicTacToeTool] = useState<'X' | 'O' | null>('X');
@@ -191,8 +194,8 @@ export function TreeEditor() {
     return (
       <div className="p-4 space-y-6">
         <div className="text-center space-y-2">
-          <h3 className="font-black uppercase tracking-widest text-sm">Configurar Tabuleiro Inicial</h3>
-          <p className="text-xs text-muted-foreground">1. Selecione a peça (X/O) ou a borracha. 2. Clique na célula.</p>
+          <h3 className="font-black uppercase tracking-widest text-sm">{t('editor.config_board')}</h3>
+          <p className="text-xs text-muted-foreground">{t('editor.tictactoe_instr')}</p>
         </div>
 
         <div className="flex justify-center gap-2 bg-muted p-2 rounded-lg border">
@@ -234,7 +237,7 @@ export function TreeEditor() {
           onClick={() => updateNodeAttributes('root', { boardState: initialTicTacToe })}
           className="w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-bold hover:bg-accent transition-colors"
         >
-          <RotateCcw size={14} /> Limpar Tabuleiro
+          <RotateCcw size={14} /> {t('editor.clear_board')}
         </button>
       </div>
     );
@@ -244,8 +247,8 @@ export function TreeEditor() {
     return (
       <div className="p-4 space-y-6">
         <div className="text-center space-y-2">
-          <h3 className="font-black uppercase tracking-widest text-sm">Configurar Estado Inicial</h3>
-          <p className="text-xs text-muted-foreground">Clique nas peças adjacentes ao vazio para movê-las</p>
+          <h3 className="font-black uppercase tracking-widest text-sm">{t('editor.config_board')}</h3>
+          <p className="text-xs text-muted-foreground">{t('editor.8puzzle_instr')}</p>
         </div>
 
         <EightPuzzleBoard
@@ -259,7 +262,7 @@ export function TreeEditor() {
           onClick={() => updateNodeAttributes('root', { boardState: initial8Puzzle })}
           className="w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-bold hover:bg-accent transition-colors"
         >
-          <RotateCcw size={14} /> Resetar Posições
+          <RotateCcw size={14} /> {t('editor.reset_positions')}
         </button>
       </div>
     );
@@ -267,7 +270,7 @@ export function TreeEditor() {
 
   return (
     <div className="p-4 border rounded-xl bg-card overflow-auto max-h-[500px]">
-      <h3 className="font-semibold mb-4">Editor de Árvore</h3>
+      <h3 className="font-semibold mb-4">{t('editor.title')}</h3>
       <TreeNodeItem
         node={tree}
         onAdd={addNode}
