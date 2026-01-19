@@ -348,22 +348,26 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   const treeHeight = Math.max(root.height * minNodeHeight, minNodeHeight);
 
   useEffect(() => {
-    if (zoomRef.current) {
+    if (zoomRef.current && width > 0 && height > 0) {
       // Lógica de centralização inteligente
-      // O layout da árvore coloca a raiz em (treeWidth / 2)
-      // O Group tem um offset de left={50}
-      // Queremos que o ponto (treeWidth/2 + 50) esteja no centro do ecrã (width/2)
-      
       const rootX = treeWidth / 2;
-      const screenCenter = width / 2;
-      const screenCenterY = height / 2;
+      
+      // Calculamos o deslocamento exato (tx, ty) para que o centro da árvore
+      // coincida com o centro do componente visual.
+      // Compensamos o offset de 50px aplicado no <Group top={50} left={50}>
+      const tx = (width / 2) - (rootX + 50);
+      const ty = (height / 2) - (treeHeight / 2 + 50);
 
-      // dx é o quanto precisamos mover para alinhar os centros
-      const dx = screenCenter - (rootX + 50);
-      const dy = screenCenterY - (treeHeight / 2 + 50);
-
-      zoomRef.current.translateTo({ x: dx, y: dy });
-      zoomRef.current.scale({ scaleX: 1, scaleY: 1 });
+      // Usamos setTransformMatrix para definir a posição e escala de forma atómica.
+      // Isto evita que a biblioteca tente calcular transições entre estados parciais.
+      zoomRef.current.setTransformMatrix({
+        scaleX: 1,
+        scaleY: 1,
+        translateX: tx,
+        translateY: ty,
+        skewX: 0,
+        skewY: 0,
+      });
     }
   }, [zoomResetTrigger, width, height, treeWidth, treeHeight]); // Recalcula se a largura mudar
 
