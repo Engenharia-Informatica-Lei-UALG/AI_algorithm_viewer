@@ -29,8 +29,7 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon } from "lucide-react"
-import { EightPuzzleBoard } from "../game/EightPuzzleBoard"
-import { TicTacToeBoard } from "../game/TicTacToeBoard"
+import { EightPuzzleBoard, TicTacToeBoard } from "../game/Boards"
 
 const algorithms = [
   {
@@ -133,6 +132,7 @@ export function AlgorithmSelector() {
   useEffect(() => {
     setIsCollapsed(!!algorithm)
     setAdmissibilityResult(null)
+    // Evita resetar violações se já estiver vazio para não disparar re-render
     setAdmissibilityViolations([])
   }, [algorithm, setAdmissibilityViolations]);
 

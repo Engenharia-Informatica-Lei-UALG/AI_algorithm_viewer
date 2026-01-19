@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
 import { useGameStore, CustomTreeNode } from "@/store/gameStore"
-import { TreeEditor } from "@/components/tree-editor/TreeEditor"
+import { TreeEditor } from "@/components/editor/TreeEditor"
 import { Save } from "lucide-react"
 import { ImageUploadPanel } from "./ImageUploadPanel"
 
@@ -42,12 +42,12 @@ function SimpleTabsList({ children }: { children: React.ReactNode }) { return <>
 function SimpleTabsTrigger({ children, value }: { children: React.ReactNode, value: string }) { return <>{children}</> }
 function SimpleTabsContent({ children, value }: { children: React.ReactNode, value: string }) { return <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-300">{children}</div> }
 
-import { AlgorithmSelector } from "@/components/controls/AlgorithmSelector"
+import { AlgorithmSelector } from "@/components/ui/AlgorithmSelector"
 
 // ... imports anteriores
 
 export function EditorPanel() {
-  const { tree, updateTree, nodesExplored, depth } = useGameStore()
+  const { tree, updateTree, nodesExplored, depth, setProblemType } = useGameStore()
   const { t } = useTranslation()
   const [jsonInput, setJsonInput] = useState("");
 
@@ -58,12 +58,31 @@ export function EditorPanel() {
   const handleLoadJson = () => {
     try {
       const parsed = JSON.parse(jsonInput);
+
+      // Caso 1: JSON direto da árvore (formato antigo/padrão)
       if (parsed.id && parsed.children) {
         updateTree(parsed as CustomTreeNode);
         alert("Árvore carregada com sucesso!");
-      } else {
-        alert("JSON inválido: Estrutura de árvore incorreta.");
+        return;
       }
+
+      // Caso 2: JSON gerado pela IA (com wrapper 'tree')
+      if (parsed.tree && parsed.tree.id && parsed.tree.children) {
+        // Se o tipo for 'custom', garantimos que o modo está correto
+        if (parsed.type === 'custom') {
+          setProblemType('custom');
+          // Pequeno delay para garantir que o store atualizou o tipo
+          setTimeout(() => {
+            updateTree(parsed.tree as CustomTreeNode);
+          }, 50);
+        } else {
+          updateTree(parsed.tree as CustomTreeNode);
+        }
+        alert("Árvore importada da IA carregada com sucesso!");
+        return;
+      }
+
+      alert("JSON inválido: Estrutura de árvore incorreta.");
     } catch (e) {
       alert("Erro ao analisar JSON.");
     }
@@ -128,9 +147,9 @@ export function EditorPanel() {
         </SimpleTabsContent>
 
         <SimpleTabsContent value="upload">
-            <div className="h-full overflow-y-auto pb-4">
-                <ImageUploadPanel />
-            </div>
+          <div className="h-full overflow-y-auto pb-4">
+            <ImageUploadPanel />
+          </div>
         </SimpleTabsContent>
       </SimpleTabs>
     </section>

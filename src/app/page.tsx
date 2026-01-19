@@ -2,10 +2,10 @@
 
 import { useGameStore } from "@/store/gameStore"
 import { useTranslation } from 'react-i18next'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useSimulation } from "@/hooks/useSimulation"
-import { VisualizationPanel } from "@/components/dashboard/VisualizationPanel"
-import { EditorPanel } from "@/components/dashboard/EditorPanel"
+import { VisualizationPanel } from "@/components/layout/VisualizationPanel"
+import { EditorPanel } from "@/components/layout/EditorPanel"
 import { Instagram, Github } from "lucide-react"
 
 export default function Home() {
@@ -19,10 +19,13 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  // Memoize visxData to prevent unnecessary re-renders of the graph
+  const visxData = useMemo(() =>
+    convertToVisx(tree, visitedNodes, currentNodeId),
+    [tree, visitedNodes, currentNodeId]
+  );
 
-  // Converter tree do store para formato VisX, injetando isVisited e isCurrent
-  const visxData = convertToVisx(tree, visitedNodes, currentNodeId);
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 font-sans flex flex-col h-screen overflow-hidden">
@@ -45,9 +48,9 @@ export default function Home() {
           onFastForward={fastForward}
         />
         <div className="xl:col-span-3 flex flex-col h-full overflow-hidden gap-4">
-            <div className="flex-1 min-h-0">
-                <EditorPanel />
-            </div>
+          <div className="flex-1 min-h-0">
+            <EditorPanel />
+          </div>
         </div>
       </main>
 

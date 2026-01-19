@@ -1,6 +1,28 @@
 // src/lib/ai/problems/TicTacToe.ts
-import { Problem, State, Action } from '../core/types'; // Ajuste o import para onde estão seus tipos
-import { getWinnerInfo } from './ticTacToeUtils';
+import { Problem, State, Action } from '../core/types';
+
+export const WINNING_LINES = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6]
+];
+
+export type WinnerInfo = {
+  winner: 'X' | 'O';
+  line: number[];
+} | null;
+
+export function getWinnerInfo(board: (string | null)[]): WinnerInfo {
+  if (!board || !Array.isArray(board)) return null;
+
+  for (const line of WINNING_LINES) {
+    const [a, b, c] = line;
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return { winner: board[a] as 'X' | 'O', line };
+    }
+  }
+  return null;
+}
 
 export interface TicTacToeState extends State {
   board: (string | null)[];
@@ -19,8 +41,6 @@ export class TicTacToe implements Problem<TicTacToeState, TicTacToeAction> {
     const board = initialBoard || Array(9).fill(null);
     const xCount = board.filter(c => c === 'X').length;
     const oCount = board.filter(c => c === 'O').length;
-
-    // O próximo a jogar é quem tem menos peças (ou X se igual)
     const playerTurn = xCount === oCount ? 'X' : 'O';
 
     this.initialState = {
@@ -34,7 +54,6 @@ export class TicTacToe implements Problem<TicTacToeState, TicTacToeAction> {
 
   getActions(state: TicTacToeState): TicTacToeAction[] {
     if (state.isTerminal) return [];
-
     const actions: TicTacToeAction[] = [];
     for (let i = 0; i < 9; i++) {
       if (state.board[i] === null) {
@@ -47,7 +66,6 @@ export class TicTacToe implements Problem<TicTacToeState, TicTacToeAction> {
   getResult(state: TicTacToeState, action: TicTacToeAction): TicTacToeState {
     const newBoard = [...state.board];
     newBoard[action.index] = state.playerTurn;
-
     const nextPlayer = state.playerTurn === 'X' ? 'O' : 'X';
     const winnerInfo = getWinnerInfo(newBoard);
     const isFull = !newBoard.includes(null);
@@ -70,11 +88,10 @@ export class TicTacToe implements Problem<TicTacToeState, TicTacToeAction> {
 
   getUtility(state: TicTacToeState): number {
     const winnerInfo = getWinnerInfo(state.board);
-    if (!winnerInfo) return 0; // Empate
+    if (!winnerInfo) return 0;
     return winnerInfo.winner === this.maxPlayer ? 1 : -1;
   }
 
-  // Funções vazias para satisfazer a interface se necessário, ou implemente conforme sua lógica
   getHeuristic(state: TicTacToeState): number { return 0; }
 
   private boardToString(board: (string | null)[]): string {

@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useGameStore } from "@/store/gameStore"
 import TreeGraph from "@/components/visualization/TreeGraph"
-import { Play, SkipBack, SkipForward, RotateCcw, FastForward } from 'lucide-react'
+import GraphVisualizer from "@/components/visualization/GraphVisualizer"
+import { Play, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch } from 'lucide-react'
 
 interface VisualizationPanelProps {
   visxData: any;
@@ -14,14 +16,15 @@ interface VisualizationPanelProps {
 
 export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward }: VisualizationPanelProps) {
   const { t } = useTranslation()
-  const { algorithm, isSimulating, reset, nodesExplored } = useGameStore()
+  const { algorithm, isSimulating, reset, nodesExplored, problemType } = useGameStore()
+  const [viewMode, setViewMode] = useState<'tree' | 'graph'>('tree')
 
   return (
     <section className="xl:col-span-9 flex flex-col h-full min-h-[500px]">
       <div className="rounded-xl border bg-card text-card-foreground shadow flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b bg-muted/10 flex flex-wrap gap-4 justify-between items-center">
 
-          {/* Controls Area - Simplificada */}
+          {/* Controls Area */}
           <div className="flex items-center gap-3">
             <div className="flex bg-muted/50 rounded-lg border p-1 gap-1 shadow-sm">
               <button
@@ -62,16 +65,42 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Algoritmo:</span>
-            <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
-              {algorithm ? algorithm.toUpperCase() : "---"}
-            </span>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            {problemType === 'custom' && (
+                <div className="flex bg-muted/50 rounded-lg border p-1 gap-1">
+                    <button
+                        onClick={() => setViewMode('tree')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'tree' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                        title="Vista de Árvore"
+                    >
+                        <GitBranch size={16} />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('graph')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'graph' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                        title="Vista de Grafo (Force-Directed)"
+                    >
+                        <Network size={16} />
+                    </button>
+                </div>
+            )}
+
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Algoritmo:</span>
+                <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
+                {algorithm ? algorithm.toUpperCase() : "---"}
+                </span>
+            </div>
           </div>
         </div>
         
         <div className="flex-1 bg-background relative overflow-hidden">
-          <TreeGraph data={visxData} width={800} height={600} />
+          {viewMode === 'tree' || problemType !== 'custom' ? (
+             <TreeGraph data={visxData} width={800} height={600} />
+          ) : (
+             <GraphVisualizer data={visxData} width={800} height={600} />
+          )}
         </div>
       </div>
     </section>
