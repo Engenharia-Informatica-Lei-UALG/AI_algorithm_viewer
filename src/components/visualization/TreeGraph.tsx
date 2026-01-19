@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Group } from '@visx/group';
 import { Tree, hierarchy } from '@visx/hierarchy';
 import { LinkVertical } from '@visx/shape';
@@ -257,14 +257,22 @@ interface TreeGraphProps {
   data: CustomTreeNode & { isCurrent?: boolean };
   width: number;
   height: number;
+  zoomResetTrigger?: number;
 }
 
-export default function TreeGraph({ data, width, height }: TreeGraphProps) {
+export default function TreeGraph({ data, width, height, zoomResetTrigger }: TreeGraphProps) {
   const { algorithm, maxNodeShape, minNodeShape, admissibilityViolations, nodeViewMode, problemType, updateNodeAttributes } = useGameStore();
 
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
+  const zoomRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (zoomRef.current) {
+      zoomRef.current.reset();
+    }
+  }, [zoomResetTrigger]);
 
   const root = useMemo(() => hierarchy(data), [data]);
 
@@ -372,7 +380,7 @@ export default function TreeGraph({ data, width, height }: TreeGraphProps) {
     <div className="relative w-full h-full overflow-hidden bg-background rounded-xl border-2 border-border shadow-inner transition-colors duration-300">
       <Zoom width={width} height={height} scaleXMin={1 / 4} scaleXMax={4} scaleYMin={1 / 4} scaleYMax={4}>
         {(zoom) => (
-          <div className="relative w-full h-full overflow-hidden" ref={zoom.containerRef as any} style={{ touchAction: 'none' }}>
+          <div className="relative w-full h-full overflow-hidden" ref={(node) => { zoom.containerRef.current = node; zoomRef.current = zoom; }} style={{ touchAction: 'none' }}>
             <svg width={width} height={height} className={cn("w-full h-full", zoom.isDragging ? "cursor-grabbing" : "cursor-grab")} onClick={() => setSelectedNode(null)}>
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" className="text-muted/10" /></pattern>

@@ -20,7 +20,8 @@ export function useSimulation() {
     resetTrigger,
     problemType,
     goalState,
-    updateTree
+    updateTree,
+    searchSettings
   } = useGameStore();
 
   const searchAlgoRef = useRef<SearchAlgorithm<any, any> | null>(null);
@@ -81,7 +82,7 @@ export function useSimulation() {
       case 'ucs': algoInstance = FrontierSearch.createUCS(problem); break;
       case 'minimax': algoInstance = new Minimax(problem, 10, false); break;
       case 'alpha-beta': algoInstance = new Minimax(problem, 10, true); break;
-      case 'mcts': algoInstance = new MCTS(problem, 100); break;
+      case 'mcts': algoInstance = new MCTS(problem, searchSettings.mctsIterations, searchSettings.mctsExploration); break;
       default: console.warn("Algoritmo não implementado:", algorithm);
     }
     searchAlgoRef.current = algoInstance;

@@ -22,7 +22,8 @@ import {
   Eye,
   LayoutGrid,
   Target,
-  Users
+  Users,
+  RotateCcw
 } from "lucide-react"
 import { useGameStore } from "@/store/gameStore"
 import { CustomTreeNode, NodeShape, ProblemType, NodeViewMode } from "@/types/game"
@@ -120,7 +121,9 @@ export function AlgorithmSelector() {
     goalState,
     setGoalState,
     ticTacToeMaxPlayer,
-    setTicTacToeMaxPlayer
+    setTicTacToeMaxPlayer,
+    searchSettings,
+    updateSearchSettings
   } = useGameStore()
 
   const [isCollapsed, setIsCollapsed] = useState(!!algorithm)
@@ -303,7 +306,7 @@ export function AlgorithmSelector() {
               </motion.div>
             )}
 
-            {isAdversarial && (problemType === 'custom' || problemType === 'tictactoe') && (
+            {isAdversarial && algorithm !== 'mcts' && (problemType === 'custom' || problemType === 'tictactoe') && (
               <motion.div
                 key="adversarial-settings"
                 initial={{ opacity: 0, y: -10 }}
@@ -379,6 +382,51 @@ export function AlgorithmSelector() {
                     </div>
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {algorithm === 'mcts' && (
+              <motion.div
+                key="mcts-settings"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="rounded-xl border-2 border-dashed p-4 bg-card space-y-4"
+              >
+                <div className="flex items-center gap-2 text-primary">
+                  <Settings2 size={18} />
+                  <h4 className="text-xs font-black uppercase tracking-widest">Configuração MCTS</h4>
+                </div>
+
+                <div className="space-y-3">
+                   <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Constante de Exploração (C)</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold">{searchSettings.mctsExploration.toFixed(2)}</span>
+                          <button
+                            onClick={() => updateSearchSettings({ mctsExploration: 1.414 })}
+                            className="p-1 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors"
+                            title="Resetar para padrão (1.414)"
+                          >
+                            <RotateCcw size={10} />
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="5"
+                        step="0.05"
+                        value={searchSettings.mctsExploration}
+                        onChange={(e) => updateSearchSettings({ mctsExploration: parseFloat(e.target.value) })}
+                        className="w-full accent-primary cursor-pointer"
+                      />
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        Equilibra exploração (novos caminhos) vs aproveitamento (melhores caminhos). Padrão: ~1.41
+                      </p>
+                   </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

@@ -30,11 +30,12 @@ class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
 export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, A> {
   private root: MCTSNode<S, A> | null = null;
   private iterations: number;
-  private cParam: number = 1.414; // Constante de exploração
+  private cParam: number;
 
-  constructor(problem: Problem<S, A>, iterations: number = 1000) {
+  constructor(problem: Problem<S, A>, iterations: number = 1000, cParam: number = 1.414) {
     super(problem);
     this.iterations = iterations;
+    this.cParam = cParam;
     this.initialize();
   }
 

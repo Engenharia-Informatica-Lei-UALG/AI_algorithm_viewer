@@ -6,6 +6,7 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 ![React](https://img.shields.io/badge/React-19-blue?style=flat-square&logo=react)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Bun](https://img.shields.io/badge/Bun-1.0-orange?style=flat-square&logo=bun)
 
 ## ✨ Funcionalidades
 
@@ -14,6 +15,7 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
   - Adicione ou remova nós diretamente no gráfico ou no painel lateral.
   - Edite nomes, valores de heurística (`h`) e custos de arestas (`g`) com um clique.
   - Configure estados iniciais para problemas clássicos como Tic-Tac-Toe e 8-Puzzle.
+  - **Importação Inteligente via IA:** Transforme desenhos de grafos ou tabuleiros em estruturas digitais interativas usando Visão Computacional (suporte a Gemini, OpenAI, Anthropic).
 - **Simulação Passo a Passo:** 
   - Controle total sobre a execução do algoritmo (Avançar, Voltar, Fast Forward).
   - Destaque visual do nó atual e do histórico de exploração.
@@ -22,6 +24,7 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
   - Busca Informada: A*, Greedy Search, IDA*.
   - Jogos/Adversários: Minimax, Alpha-Beta Pruning, MCTS.
 - **Análise de Heurística:** Verificação de admissibilidade em tempo real para problemas customizados.
+- **Internacionalização (i18n):** Suporte completo para Inglês (EN) e Português (PT).
 
 ## 🏗️ Arquitetura e Modularidade
 
@@ -42,9 +45,9 @@ src/
 │   ├── editor/     # Lógica do editor de estruturas
 │   ├── visualization/ # Renderização de árvores (Visx) e grafos (D3)
 │   └── game/       # Visualizações específicas de jogos (Tabuleiros)
-├── hooks/          # Hooks customizados para simulação e estado
-├── lib/            # Núcleo de IA (Algoritmos e Problemas)
-├── store/          # Gerenciamento de estado global com Zustand
+├── hooks/          # Hooks customizados (useSimulation, etc)
+├── lib/            # Núcleo de IA (Algoritmos), Serviços (IA) e i18n
+├── store/          # Gerenciamento de estado global (Zustand + Immer)
 └── types/          # Definições de tipos centrais do projeto
 ```
 

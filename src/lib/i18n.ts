@@ -28,6 +28,8 @@ const resources = {
       "footer_text": "© 2026 Algorithm AI Labs",
       "docs_link": "JSON Documentation",
       "graph_mode": "Graph Mode (Force-Directed)",
+      "view_hint": "Tip: Switch between Tree and Graph views here!",
+      "center_view": "Center View",
       "editor": {
         "title": "Tree Editor",
         "structure_title": "Search Structure",
@@ -91,6 +93,8 @@ const resources = {
       "footer_text": "© 2026 Algorithm AI Labs",
       "docs_link": "Documentação JSON",
       "graph_mode": "Modo Grafo (Force-Directed)",
+      "view_hint": "Dica: Alterne entre vista de Árvore e Grafo aqui!",
+      "center_view": "Centralizar Vista",
       "editor": {
         "title": "Editor de Árvore",
         "structure_title": "Estrutura da Busca",

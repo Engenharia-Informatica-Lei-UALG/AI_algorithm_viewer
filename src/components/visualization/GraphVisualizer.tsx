@@ -12,6 +12,7 @@ interface GraphVisualizerProps {
   data: CustomTreeNode;
   width: number;
   height: number;
+  zoomResetTrigger?: number;
 }
 
 interface GraphNode extends d3.SimulationNodeDatum {
@@ -32,11 +33,18 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   cost?: number;
 }
 
-function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
+function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisualizerProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
   const { admissibilityViolations } = useGameStore();
+  const zoomRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (zoomRef.current) {
+      zoomRef.current.reset();
+    }
+  }, [zoomResetTrigger]);
 
   const { nodes, links } = useMemo(() => {
     const uniqueNodes = new Map<string, GraphNode>();
@@ -277,7 +285,7 @@ function GraphVisualizer({ data, width, height }: GraphVisualizerProps) {
         {(zoom) => (
           <div
             className="relative w-full h-full overflow-hidden"
-            ref={zoom.containerRef as any}
+            ref={(node) => { zoom.containerRef.current = node; zoomRef.current = zoom; }}
             style={{ touchAction: 'none' }}
           >
             <svg
