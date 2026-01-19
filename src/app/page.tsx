@@ -6,7 +6,8 @@ import { useState, useEffect, useMemo } from "react"
 import { useSimulation } from "@/hooks/useSimulation"
 import { VisualizationPanel } from "@/components/layout/VisualizationPanel"
 import { EditorPanel } from "@/components/layout/EditorPanel"
-import { Instagram, Github } from "lucide-react"
+import { Instagram, Github, BookOpen } from "lucide-react"
+import Link from 'next/link'
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -75,6 +76,13 @@ export default function Home() {
             <Instagram size={16} />
             Instagram
           </a>
+          <Link
+            href="/docs/json"
+            className="hover:text-foreground transition-colors flex items-center gap-1.5 text-xs font-bold border-l pl-4"
+          >
+            <BookOpen size={16} />
+            Documentação JSON
+          </Link>
         </div>
       </footer>
     </div>
