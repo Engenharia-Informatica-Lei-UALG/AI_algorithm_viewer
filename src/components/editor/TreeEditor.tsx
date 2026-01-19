@@ -1,6 +1,7 @@
 "use client"
 
-import { useGameStore, CustomTreeNode } from "@/store/gameStore"
+import { useGameStore } from "@/store/gameStore"
+import { CustomTreeNode } from "@/types/game"
 import { TicTacToeBoard, EightPuzzleBoard } from "../game/Boards"
 import { useState } from "react"
 import { RotateCcw, MousePointer2, Plus, Trash2, Edit2, Check, X } from "lucide-react"

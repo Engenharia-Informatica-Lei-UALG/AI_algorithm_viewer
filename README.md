@@ -9,34 +9,58 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 
 ## ✨ Funcionalidades
 
-- **Visualização Dinâmica:** Árvores de busca interativas com suporte a zoom e pan.
-- **Editor de Árvore em Tempo Real:** 
+- **Visualização Dinâmica:** Árvores de busca e grafos interativos com suporte a zoom e pan (Force-Directed Layout para grafos).
+- **Editor de Estruturas em Tempo Real:** 
   - Adicione ou remova nós diretamente no gráfico ou no painel lateral.
   - Edite nomes, valores de heurística (`h`) e custos de arestas (`g`) com um clique.
-  - Marque nós como objetivos (`Goal`) com feedback visual animado.
+  - Configure estados iniciais para problemas clássicos como Tic-Tac-Toe e 8-Puzzle.
 - **Simulação Passo a Passo:** 
-  - Controle total sobre a execução do algoritmo (Avançar, Voltar, Reset).
-  - Destaque visual do nó atual (foco em roxo) e do histórico de exploração.
+  - Controle total sobre a execução do algoritmo (Avançar, Voltar, Fast Forward).
+  - Destaque visual do nó atual e do histórico de exploração.
 - **Algoritmos Suportados:**
-  - Busca Cega: BFS, DFS, UCS.
-  - Busca Informada: A*, Greedy Search.
+  - Busca Cega: BFS, DFS, UCS, IDS.
+  - Busca Informada: A*, Greedy Search, IDA*.
   - Jogos/Adversários: Minimax, Alpha-Beta Pruning, MCTS.
-- **Interface Moderna:** Suporte nativo a Modo Escuro/Claro e internacionalização (PT/EN).
+- **Análise de Heurística:** Verificação de admissibilidade em tempo real para problemas customizados.
+
+## 🏗️ Arquitetura e Modularidade
+
+O projeto foi refatorado para seguir padrões modernos de desenvolvimento modular:
+
+- **Tipagem Centralizada:** Todas as interfaces de domínio (`CustomTreeNode`, `AlgorithmType`, etc.) estão em `src/types/game.ts`, garantindo consistência em toda a aplicação.
+- **Componentes de UI Encapsulados:** Implementação de componentes genéricos (como `Tabs`) para facilitar a reutilização e manter o código DRY.
+- **Lógica de IA Desacoplada:** O núcleo de simulação utiliza interfaces abstratas (`Problem`, `State`, `Action`), permitindo a fácil adição de novos problemas sem alterar a visualização.
+
+## 📂 Estrutura do Projeto
+
+```text
+src/
+├── app/            # Rotas e layout principal do Next.js
+├── components/     # Componentes React organizados por responsabilidade
+│   ├── layout/     # Painéis principais e organização da página
+│   ├── ui/         # Componentes de interface reutilizáveis
+│   ├── editor/     # Lógica do editor de estruturas
+│   ├── visualization/ # Renderização de árvores (Visx) e grafos (D3)
+│   └── game/       # Visualizações específicas de jogos (Tabuleiros)
+├── hooks/          # Hooks customizados para simulação e estado
+├── lib/            # Núcleo de IA (Algoritmos e Problemas)
+├── store/          # Gerenciamento de estado global com Zustand
+└── types/          # Definições de tipos centrais do projeto
+```
 
 ## 🚀 Tecnologias Utilizadas
 
 - **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
-- **Visualização:** [@visx](https://airbnb.io/visx/) para renderização de alta performance de estruturas de dados.
-- **Estado Global:** [Zustand](https://github.com/pmndrs/zustand) para gerenciamento de estado leve e reativo.
-- **Animações:** [Framer Motion](https://www.framer.com/motion/) para transições suaves e feedback interativo.
-- **Estilização:** [Tailwind CSS](https://tailwindcss.com/) com suporte a temas dinâmicos.
-- **Ícones:** [Lucide React](https://lucide.dev/)
+- **Visualização:** [@visx](https://airbnb.io/visx/) e [D3.js](https://d3js.org/) para gráficos de alta performance.
+- **Estado Global:** [Zustand](https://github.com/pmndrs/zustand) para um gerenciamento de estado leve e reativo.
+- **Animações:** [Framer Motion](https://www.framer.com/motion/) para transições suaves.
+- **Estilização:** [Tailwind CSS](https://tailwindcss.com/) com temas modernos e profissionais.
 
 ## 🛠️ Instalação e Execução
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/kanekitakitos/algorithm_ia.git
+   git clone https://github.com/kanekitakitos/AI_algorithm_viewer.git
    ```
 
 2. Instale as dependências:
@@ -49,15 +73,13 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 3. Inicie o servidor de desenvolvimento:
    ```bash
    bun dev
-   # ou
-   npm run dev
    ```
 
 4. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ## 🙏 Agradecimentos
 
-Este projeto foi inspirado e baseado na ideia original do repositório [minimax](https://github.com/lerneumann/minimax) de **lerneumann**. Um agradecimento especial por fornecer a base conceitual para esta ferramenta.
+Este projeto foi inspirado e baseado na ideia original do repositório [minimax](https://github.com/lerneumann/minimax) de **lerneumann**.
 
 ## 👤 Autor
 

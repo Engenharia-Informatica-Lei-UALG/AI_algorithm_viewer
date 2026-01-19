@@ -2,49 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
-import { useGameStore, CustomTreeNode } from "@/store/gameStore"
+import { useGameStore } from "@/store/gameStore"
 import { TreeEditor } from "@/components/editor/TreeEditor"
 import { Save } from "lucide-react"
 import { ImageUploadPanel } from "./ImageUploadPanel"
-
-// Componente Tabs simplificado
-function SimpleTabs({ children, defaultValue }: { children: React.ReactNode, defaultValue: string }) {
-  const [active, setActive] = useState(defaultValue);
-  return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex border-b mb-4 shrink-0 overflow-x-auto">
-        {(children as any[]).find((c: any) => c.type === SimpleTabsList)?.props.children.map((trigger: any) => (
-          <button
-            key={trigger.props.value}
-            onClick={() => setActive(trigger.props.value)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${active === trigger.props.value
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            {trigger.props.children}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 overflow-hidden">
-        {(children as any[]).map((child: any) => {
-          if (child.type === SimpleTabsContent && child.props.value === active) {
-            return child;
-          }
-          return null;
-        })}
-      </div>
-    </div>
-  )
-}
-
-function SimpleTabsList({ children }: { children: React.ReactNode }) { return <>{children}</> }
-function SimpleTabsTrigger({ children, value }: { children: React.ReactNode, value: string }) { return <>{children}</> }
-function SimpleTabsContent({ children, value }: { children: React.ReactNode, value: string }) { return <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-300">{children}</div> }
-
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs"
 import { AlgorithmSelector } from "@/components/ui/AlgorithmSelector"
-
-// ... imports anteriores
+import { CustomTreeNode } from "@/types/game"
 
 export function EditorPanel() {
   const { tree, updateTree, nodesExplored, depth, setProblemType } = useGameStore()
@@ -68,10 +32,8 @@ export function EditorPanel() {
 
       // Caso 2: JSON gerado pela IA (com wrapper 'tree')
       if (parsed.tree && parsed.tree.id && parsed.tree.children) {
-        // Se o tipo for 'custom', garantimos que o modo está correto
         if (parsed.type === 'custom') {
           setProblemType('custom');
-          // Pequeno delay para garantir que o store atualizou o tipo
           setTimeout(() => {
             updateTree(parsed.tree as CustomTreeNode);
           }, 50);
@@ -90,29 +52,29 @@ export function EditorPanel() {
 
   return (
     <section className="flex flex-col h-full overflow-hidden">
-      <SimpleTabs defaultValue="algo">
-        <SimpleTabsList>
-          <SimpleTabsTrigger value="algo">Algorithm</SimpleTabsTrigger>
-          <SimpleTabsTrigger value="editor">Tree Editor</SimpleTabsTrigger>
-          <SimpleTabsTrigger value="json">JSON</SimpleTabsTrigger>
-          <SimpleTabsTrigger value="stats">Stats</SimpleTabsTrigger>
-          <SimpleTabsTrigger value="upload">Upload</SimpleTabsTrigger>
-        </SimpleTabsList>
+      <Tabs defaultValue="algo">
+        <TabsList>
+          <TabsTrigger value="algo">Algorithm</TabsTrigger>
+          <TabsTrigger value="editor">Tree Editor</TabsTrigger>
+          <TabsTrigger value="json">JSON</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
+          <TabsTrigger value="upload">Upload</TabsTrigger>
+        </TabsList>
 
-        <SimpleTabsContent value="algo">
+        <TabsContent value="algo">
           <div className="h-full overflow-y-auto pb-4">
             <h3 className="font-semibold mb-3">Select Algorithm</h3>
             <AlgorithmSelector />
           </div>
-        </SimpleTabsContent>
+        </TabsContent>
 
-        <SimpleTabsContent value="editor">
+        <TabsContent value="editor">
           <div className="h-full overflow-y-auto pb-20">
             <TreeEditor />
           </div>
-        </SimpleTabsContent>
+        </TabsContent>
 
-        <SimpleTabsContent value="json">
+        <TabsContent value="json">
           <div className="flex flex-col gap-2 h-full pb-4">
             <textarea
               value={jsonInput}
@@ -128,9 +90,9 @@ export function EditorPanel() {
               Carregar JSON
             </button>
           </div>
-        </SimpleTabsContent>
+        </TabsContent>
 
-        <SimpleTabsContent value="stats">
+        <TabsContent value="stats">
           <div className="space-y-4">
             <h3 className="font-semibold">{t('stats')}</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -144,14 +106,14 @@ export function EditorPanel() {
               </div>
             </div>
           </div>
-        </SimpleTabsContent>
+        </TabsContent>
 
-        <SimpleTabsContent value="upload">
+        <TabsContent value="upload">
           <div className="h-full overflow-y-auto pb-4">
             <ImageUploadPanel />
           </div>
-        </SimpleTabsContent>
-      </SimpleTabs>
+        </TabsContent>
+      </Tabs>
     </section>
   )
 }

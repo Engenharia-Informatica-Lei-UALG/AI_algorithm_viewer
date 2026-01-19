@@ -24,7 +24,8 @@ import {
   Target,
   Users
 } from "lucide-react"
-import { useGameStore, CustomTreeNode, NodeShape, ProblemType, NodeViewMode } from "@/store/gameStore"
+import { useGameStore } from "@/store/gameStore"
+import { CustomTreeNode, NodeShape, ProblemType, NodeViewMode } from "@/types/game"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'

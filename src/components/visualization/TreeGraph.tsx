@@ -7,7 +7,8 @@ import { LinkVertical } from '@visx/shape';
 import { Zoom } from '@visx/zoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2, Repeat } from 'lucide-react';
-import { CustomTreeNode, useGameStore, NodeShape } from '@/store/gameStore';
+import { useGameStore } from '@/store/gameStore';
+import { CustomTreeNode, NodeShape } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { TicTacToeBoard, EightPuzzleBoard } from '../game/Boards';
 

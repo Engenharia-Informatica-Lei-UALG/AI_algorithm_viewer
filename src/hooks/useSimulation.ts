@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useGameStore, AlgorithmType, ProblemType } from '@/store/gameStore';
+import { useGameStore } from '@/store/gameStore';
+import { AlgorithmType, ProblemType } from '@/types/game';
 import { CustomTreeProblem } from '@/lib/ai/problems/CustomTreeProblem';
 import { TicTacToe } from '@/lib/ai/problems/TicTacToe';
 import { EightPuzzle } from '@/lib/ai/problems/EightPuzzle';
@@ -10,12 +11,12 @@ import { SearchAlgorithm, SearchStatus } from '@/lib/ai/core/SearchAlgorithm';
 import { Problem } from '@/lib/ai/core/types';
 
 export function useSimulation() {
-  const { 
-    algorithm, 
-    tree, 
-    isSimulating, 
-    toggleSimulation, 
-    setNodesExplored, 
+  const {
+    algorithm,
+    tree,
+    isSimulating,
+    toggleSimulation,
+    setNodesExplored,
     resetTrigger,
     problemType,
     goalState,
@@ -35,13 +36,13 @@ export function useSimulation() {
   // O useMemo abaixo tenta capturar apenas mudanças estruturais relevantes.
   const problemStateJson = useMemo(() => {
     if (problemType === 'custom') {
-        // Simplificação: assume que se o ID ou children mudarem, a estrutura mudou.
-        // Evita serializar a árvore inteira a cada render se apenas props visuais mudarem.
-        return JSON.stringify({
-            id: tree.id,
-            childrenCount: tree.children?.length,
-            // Adicione mais propriedades se necessário para detectar mudanças estruturais
-        });
+      // Simplificação: assume que se o ID ou children mudarem, a estrutura mudou.
+      // Evita serializar a árvore inteira a cada render se apenas props visuais mudarem.
+      return JSON.stringify({
+        id: tree.id,
+        childrenCount: tree.children?.length,
+        // Adicione mais propriedades se necessário para detectar mudanças estruturais
+      });
     }
     if (problemType === 'tictactoe' || problemType === '8puzzle') return JSON.stringify(tree.boardState);
     return '';
@@ -114,7 +115,7 @@ export function useSimulation() {
       if (problemType !== 'custom' && 'getTree' in algo) {
         updateTree((algo as any).getTree());
       }
-      
+
       const nodeId = (node.state as any).key || (node.state as any).nodeId;
       if (nodeId) {
         setHistory(prev => [...prev, nodeId]);

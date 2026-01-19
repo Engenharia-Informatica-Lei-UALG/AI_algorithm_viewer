@@ -1,5 +1,5 @@
 import { Problem, State, Action } from '../core/types';
-import { CustomTreeNode } from '@/store/gameStore';
+import { CustomTreeNode } from '@/types/game';
 
 export interface CustomTreeState extends State {
   nodeId: string;
