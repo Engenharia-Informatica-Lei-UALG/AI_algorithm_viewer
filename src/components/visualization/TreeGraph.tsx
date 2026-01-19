@@ -6,7 +6,7 @@ import { Tree, hierarchy } from '@visx/hierarchy';
 import { LinkVertical } from '@visx/shape';
 import { Zoom } from '@visx/zoom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2, Repeat } from 'lucide-react';
+import { Plus, Edit2, X, Check, Trash2, Target, Grid3X3, MousePointer2, Repeat, Calculator, GitFork, Trophy, Eye } from 'lucide-react';
 import { useGameStore } from '@/store/gameStore';
 import { CustomTreeNode, NodeShape } from '@/types/game';
 import { cn } from '@/lib/utils';
@@ -55,7 +55,7 @@ interface NodeActionMenuProps {
   mode?: 'node' | 'edge';
 }
 
-const findNodeRecursive = (root: CustomTreeNode, id: string): CustomTreeNode | null => {
+export const findNodeRecursive = (root: CustomTreeNode, id: string): CustomTreeNode | null => {
   if (root.id === id) return root;
   for (const child of root.children) {
     const found = findNodeRecursive(child, id);
@@ -64,8 +64,17 @@ const findNodeRecursive = (root: CustomTreeNode, id: string): CustomTreeNode | n
   return null;
 };
 
-function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }: NodeActionMenuProps) {
-  const { addNode, updateNodeAttributes, removeNode, algorithm, problemType, tree } = useGameStore();
+export const findParentRecursive = (root: CustomTreeNode, targetId: string): CustomTreeNode | null => {
+  for (const child of root.children) {
+    if (child.id === targetId) return root;
+    const found = findParentRecursive(child, targetId);
+    if (found) return found;
+  }
+  return null;
+};
+
+export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }: NodeActionMenuProps) {
+  const { addNode, updateNodeAttributes, removeNode, algorithm, problemType, tree, searchSettings } = useGameStore();
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [isEditingBoard, setIsEditingBoard] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -79,6 +88,11 @@ function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }:
     if (!initialNode) return null;
     return findNodeRecursive(tree, initialNode.id) || initialNode;
   }, [tree, initialNode]);
+
+  const parentNode = useMemo(() => {
+    if (!currentNode) return null;
+    return findParentRecursive(tree, currentNode.id);
+  }, [tree, currentNode]);
 
   useEffect(() => {
     if (currentNode) {
@@ -106,6 +120,7 @@ function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }:
   const hasChildren = currentNode.children && currentNode.children.length > 0;
   const isAdversarial = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
   const isGameProblem = problemType === 'tictactoe' || problemType === '8puzzle';
+  const isMCTS = algorithm === 'mcts';
 
   const handleAddChild = () => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -146,6 +161,21 @@ function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }:
     }
   };
 
+  // Cálculos MCTS
+  let mctsStats = null;
+  if (isMCTS && currentNode) {
+    const N = (parentNode as any)?.visits || 0; // Visitas do pai
+    const n = (currentNode as any).visits || 0; // Visitas do nó
+    const v = currentNode.value || 0;  // Valor médio (Q/n) já calculado pelo algoritmo
+    const C = searchSettings.mctsExploration;
+    
+    // Evita divisão por zero e logs inválidos
+    const explorationTerm = (n > 0 && N > 0) ? C * Math.sqrt(Math.log(N) / n) : 0;
+    const ucbScore = v + explorationTerm; // Simplificado (assume Max player para visualização)
+
+    mctsStats = { N, n, v, explorationTerm, ucbScore };
+  }
+
   return (
     <AnimatePresence>
       <motion.div
@@ -168,6 +198,47 @@ function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }:
           )}
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0"><X size={14} /></button>
         </div>
+
+        {/* SEÇÃO DE ESPECIFICAÇÕES MCTS */}
+        {isMCTS && mctsStats && mode === 'node' && (
+          <div className="p-2 bg-primary/5 rounded-md border border-primary/10 mb-1 space-y-2">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+              <Calculator size={12} /> Especificações MCTS
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-background p-1.5 rounded border flex flex-col">
+                <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                  <Eye size={9} /> Visitas (n)
+                </span>
+                <span className="font-mono font-bold">{mctsStats.n}</span>
+              </div>
+              <div className="bg-background p-1.5 rounded border flex flex-col">
+                <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                  <GitFork size={9} /> Filhos
+                </span>
+                <span className="font-mono font-bold">{currentNode.children.length}</span>
+              </div>
+              <div className="bg-background p-1.5 rounded border flex flex-col col-span-2">
+                <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                  <Trophy size={9} /> Pontuação UCB1
+                </span>
+                <div className="flex justify-between items-end">
+                  <span className="font-mono font-bold text-primary">{mctsStats.ucbScore.toFixed(4)}</span>
+                  <span className="text-[9px] text-muted-foreground">
+                    {mctsStats.v.toFixed(2)} (Q) + {mctsStats.explorationTerm.toFixed(2)} (Expl)
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {parentNode && (
+              <div className="text-[9px] text-muted-foreground text-center border-t border-primary/10 pt-1">
+                Visitas do Pai (N): <span className="font-mono font-bold">{mctsStats.N}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {isEditingBoard ? (
           <div className="p-2 flex flex-col items-center gap-3 bg-muted/30 rounded-md">
@@ -273,8 +344,8 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   const isGameMode = nodeViewMode === 'game' && problemType !== 'custom';
   const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
   const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
-  const treeWidth = Math.max(width - 100, root.leaves().length * minNodeWidth);
-  const treeHeight = Math.max(height - 150, root.height * minNodeHeight);
+  const treeWidth = Math.max(root.leaves().length * minNodeWidth, minNodeWidth);
+  const treeHeight = Math.max(root.height * minNodeHeight, minNodeHeight);
 
   useEffect(() => {
     if (zoomRef.current) {
@@ -285,13 +356,16 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       
       const rootX = treeWidth / 2;
       const screenCenter = width / 2;
+      const screenCenterY = height / 2;
+
       // dx é o quanto precisamos mover para alinhar os centros
       const dx = screenCenter - (rootX + 50);
+      const dy = screenCenterY - (treeHeight / 2 + 50);
 
-      zoomRef.current.translateTo({ x: dx, y: 0 });
+      zoomRef.current.translateTo({ x: dx, y: dy });
       zoomRef.current.scale({ scaleX: 1, scaleY: 1 });
     }
-  }, [zoomResetTrigger, width, treeWidth]); // Recalcula se a largura mudar
+  }, [zoomResetTrigger, width, height, treeWidth, treeHeight]); // Recalcula se a largura mudar
 
   const handleNodeClick = (e: React.MouseEvent, node: CustomTreeNode) => {
     e.stopPropagation();
@@ -433,6 +507,22 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                             {isCurrent && <motion.circle r={34} fill="none" stroke="#a855f7" strokeWidth={4} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
                             {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
                             
+                            {/* Nome do Nó */}
+                            <text
+                              dy={isGameMode ? (problemType === 'tictactoe' ? -75 : -65) : ".33em"}
+                              fontSize={isGameMode ? 10 : 11}
+                              fontWeight="bold"
+                              textAnchor="middle"
+                              style={{ pointerEvents: 'none' }}
+                              fill="currentColor"
+                              className={cn(
+                                isGameMode ? "text-muted-foreground" : (isCurrent || isGoal || admissibilityViolations.includes(nodeData.id) ? "text-white" : "text-foreground"),
+                                isPruned && "opacity-30"
+                              )}
+                            >
+                              {nodeData.name}
+                            </text>
+                            
                             {/* Visualização Padrão de Heurística */}
                             {showHeuristic && !isMCTS && nodeData.value !== undefined && !isPruned && (
                               <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
@@ -446,7 +536,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                               <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
                                 <rect x={-25} y={-12} width={50} height={20} rx={10} fill="currentColor" className="text-foreground" />
                                 <text dy=".33em" fontSize={9} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-background">
-                                  {nodeData.value?.toFixed(1)} / {nodeData.visits || 0}
+                                  {nodeData.value?.toFixed(1)} / {(nodeData as any).visits || 0}
                                 </text>
                               </Group>
                             )}

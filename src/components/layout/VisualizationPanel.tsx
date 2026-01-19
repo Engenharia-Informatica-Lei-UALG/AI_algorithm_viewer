@@ -11,12 +11,12 @@ import { ParentSize } from '@visx/responsive'
 
 interface VisualizationPanelProps {
   visxData: any;
-  onStep: () => void;
-  onStepBack: () => void;
-  onFastForward: () => void;
+  onStepAction: () => void;
+  onStepBackAction: () => void;
+  onFastForwardAction: () => void;
 }
 
-export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward }: VisualizationPanelProps) {
+export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, onFastForwardAction }: VisualizationPanelProps) {
   const { t } = useTranslation()
   const { algorithm, isSimulating, reset, nodesExplored, problemType } = useGameStore()
   const [viewMode, setViewMode] = useState<'tree' | 'graph'>('tree')
@@ -44,7 +44,7 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
           <div className="flex items-center gap-3">
             <div className="flex bg-muted/50 rounded-lg border p-1 gap-1 shadow-sm">
               <button
-                onClick={onStepBack}
+                onClick={onStepBackAction}
                 disabled={!algorithm || isSimulating || nodesExplored === 0}
                 className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
                 title={t('step_back')}
@@ -53,7 +53,7 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
               </button>
               
               <button
-                onClick={onStep}
+                onClick={onStepAction}
                 disabled={!algorithm || isSimulating}
                 className="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-md disabled:opacity-30 transition-all"
                 title={t('step')}
@@ -62,7 +62,7 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
               </button>
 
               <button
-                onClick={onFastForward}
+                onClick={onFastForwardAction}
                 disabled={!algorithm || isSimulating}
                 className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
                 title="Resultado Final"
@@ -107,7 +107,7 @@ export function VisualizationPanel({ visxData, onStep, onStepBack, onFastForward
                             
                             <div className="flex items-start gap-2">
                               <Sparkles size={14} className="text-yellow-400 shrink-0 animate-pulse" />
-                              <p className="leading-tight">{t('view_hint')}</p>
+                              <p className="leading-tight">{t('view_hint') as string}</p>
                               <button 
                                 onClick={dismissHint}
                                 className="hover:bg-white/20 rounded p-0.5 transition-colors"

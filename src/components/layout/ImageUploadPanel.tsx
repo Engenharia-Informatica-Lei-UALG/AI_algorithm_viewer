@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from 'react-i18next'
 import { ImageAnalysisService, LLMProvider } from "@/lib/ai/services/ImageAnalysisService"
-import { useGameStore, AlgorithmType } from "@/store/gameStore"
-import { CustomTreeNode } from "@/types/game"
+import { useGameStore } from "@/store/gameStore"
+import { CustomTreeNode, AlgorithmType } from "@/types/game"
 import { Upload, Loader2, Key, Settings2, Copy, Check, Server, Box, Edit2, RotateCcw } from "lucide-react"
 
 export function ImageUploadPanel() {
@@ -124,9 +124,9 @@ export function ImageUploadPanel() {
              }, 100);
         } else if (resultType === 'custom') {
             setProblemType('custom')
-            finalTreeForDisplay = result.tree;
+            finalTreeForDisplay = (result as any).tree;
             setTimeout(() => {
-                updateTree(result.tree);
+                updateTree((result as any).tree);
             }, 100);
         }
 

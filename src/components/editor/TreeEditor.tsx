@@ -12,17 +12,17 @@ import { useTranslation } from "react-i18next"
 
 interface TreeNodeItemProps {
   node: CustomTreeNode
-  onAdd: (parentId: string, node: CustomTreeNode) => void
-  onRemove: (id: string) => void
-  onUpdate: (id: string, attrs: Partial<CustomTreeNode>) => void
+  onAddAction: (parentId: string, node: CustomTreeNode) => void
+  onRemoveAction: (id: string) => void
+  onUpdateAction: (id: string, attrs: Partial<CustomTreeNode>) => void
   isRoot?: boolean
 }
 
 export function TreeNodeItem({
   node,
-  onAdd,
-  onRemove,
-  onUpdate,
+  onAddAction,
+  onRemoveAction,
+  onUpdateAction,
   isRoot = false
 }: TreeNodeItemProps) {
   const { t } = useTranslation()
@@ -35,7 +35,7 @@ export function TreeNodeItem({
 
   const handleAdd = () => {
     const id = Math.random().toString(36).substr(2, 9);
-    onAdd(node.id, {
+    onAddAction(node.id, {
       id,
       name: `${t('editor.move_prefix')} ${id.substr(0, 2)}`,
       value: 0,
@@ -46,7 +46,7 @@ export function TreeNodeItem({
   }
 
   const handleSave = () => {
-    onUpdate(node.id, {
+    onUpdateAction(node.id, {
       name,
       value: Number(value),
       costToParent: Number(cost),
@@ -131,7 +131,7 @@ export function TreeNodeItem({
               <Plus size={14} />
             </button>
             {!isRoot && (
-              <button onClick={() => onRemove(node.id)} className="p-1 hover:bg-destructive/20 text-destructive rounded" title={t('editor.remove_node')}>
+              <button onClick={() => onRemoveAction(node.id)} className="p-1 hover:bg-destructive/20 text-destructive rounded" title={t('editor.remove_node')}>
                 <Trash2 size={14} />
               </button>
             )}
@@ -144,9 +144,9 @@ export function TreeNodeItem({
           <TreeNodeItem
             key={child.id}
             node={child}
-            onAdd={onAdd}
-            onRemove={onRemove}
-            onUpdate={onUpdate}
+            onAddAction={onAddAction}
+            onRemoveAction={onRemoveAction}
+            onUpdateAction={onUpdateAction}
           />
         ))}
       </div>
@@ -273,9 +273,9 @@ export function TreeEditor() {
       <h3 className="font-semibold mb-4">{t('editor.title')}</h3>
       <TreeNodeItem
         node={tree}
-        onAdd={addNode}
-        onRemove={removeNode}
-        onUpdate={updateNodeAttributes}
+        onAddAction={addNode}
+        onRemoveAction={removeNode}
+        onUpdateAction={updateNodeAttributes}
         isRoot={true}
       />
     </div>

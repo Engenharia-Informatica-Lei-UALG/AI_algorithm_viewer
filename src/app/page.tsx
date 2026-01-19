@@ -44,9 +44,9 @@ export default function Home() {
       <main className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 min-h-0 pb-4 overflow-y-auto">
         <VisualizationPanel
           visxData={visxData}
-          onStep={stepForward}
-          onStepBack={stepBack}
-          onFastForward={fastForward}
+          onStepAction={stepForward}
+          onStepBackAction={stepBack}
+          onFastForwardAction={fastForward}
         />
         <div className="xl:col-span-3 flex flex-col h-full overflow-hidden gap-4">
           <div className="flex-1 min-h-0">

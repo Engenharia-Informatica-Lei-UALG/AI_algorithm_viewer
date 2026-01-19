@@ -2,7 +2,7 @@
 
 Um laboratório interativo para visualização e experimentação de algoritmos de Inteligência Artificial e Teoria dos Grafos. Construído com tecnologias modernas para proporcionar uma experiência de aprendizado fluida e visualmente atraente.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
 ![React](https://img.shields.io/badge/React-19-blue?style=flat-square&logo=react)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
@@ -53,7 +53,7 @@ src/
 
 ## 🚀 Tecnologias Utilizadas
 
-- **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
 - **Visualização:** [@visx](https://airbnb.io/visx/) e [D3.js](https://d3js.org/) para gráficos de alta performance.
 - **Estado Global:** [Zustand](https://github.com/pmndrs/zustand) para um gerenciamento de estado leve e reativo.
 - **Animações:** [Framer Motion](https://www.framer.com/motion/) para transições suaves.

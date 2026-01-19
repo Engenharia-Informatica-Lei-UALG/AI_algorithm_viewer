@@ -218,11 +218,11 @@ export function EditorPanel() {
             <h3 className="font-semibold">{t('stats')}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-muted/50 rounded-lg border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('nodes_explored')}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{(t('nodes_explored') as string)}</p>
                 <p className="text-2xl font-mono font-bold">{nodesExplored}</p>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('depth')}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{(t('depth') as string)}</p>
                 <p className="text-2xl font-mono font-bold">{depth}</p>
               </div>
             </div>
@@ -250,7 +250,7 @@ export function EditorPanel() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm font-mono font-medium">{value}</span>
+                          <span className="text-sm font-mono font-medium">{(value as React.ReactNode)}</span>
                         )}
                       </div>
                     </div>

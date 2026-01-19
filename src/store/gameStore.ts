@@ -28,7 +28,7 @@ interface GameState {
   admissibilityViolations: string[]
 
   // Estatísticas dinâmicas do algoritmo (ex: Lista de Abertos, Fechados, UCB)
-  algorithmStats: Record<string, string | number | string[]>
+  algorithmStats: Record<string, any>
 
   // Estado da Árvore Customizada
   tree: CustomTreeNode
@@ -56,7 +56,7 @@ interface GameState {
   setAdmissibilityViolations: (ids: string[]) => void
   toggleAdmissibility: () => void
 
-  setAlgorithmStats: (stats: Record<string, string | number | string[]>) => void
+  setAlgorithmStats: (stats: Record<string, any>) => void
   // Ações de Edição da Árvore
   updateTree: (newTree: CustomTreeNode) => void
   addNode: (parentId: string, node: CustomTreeNode) => void

@@ -1,12 +1,13 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { useGameStore } from '@/store/gameStore';
 import { CustomTreeNode } from '@/types/game';
 import { Zoom } from '@visx/zoom';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { NodeActionMenu, findNodeRecursive } from './TreeGraph';
 
 interface GraphVisualizerProps {
   data: CustomTreeNode;
@@ -38,6 +39,10 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
   const { admissibilityViolations } = useGameStore();
+  
+  const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
+  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+  const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
   const zoomRef = useRef<any>(null);
 
   useEffect(() => {
@@ -173,9 +178,19 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
       const labelGroup = svg.select(".labels")
         .selectAll<SVGGElement, GraphLink>("g")
-        .data(links);
+        .data(links, d => `${(d.source as any).id}-${(d.target as any).id}`);
 
-      const labelEnter = labelGroup.enter().append("g");
+      const labelEnter = labelGroup.enter().append("g")
+        .attr("class", "cursor-pointer")
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          const treeNode = findNodeRecursive(data, (d.target as GraphNode).originalIds[0]);
+          if (treeNode) {
+            setMenuPos({ x: event.clientX, y: event.clientY });
+            setMenuMode('edge');
+            setSelectedNode(treeNode);
+          }
+        });
 
       labelEnter.append("rect")
         .attr("rx", 4)
@@ -225,6 +240,16 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
       const nodeEnter = nodeSelection.enter()
         .append("g")
+        .attr("class", "cursor-pointer")
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          const treeNode = findNodeRecursive(data, d.originalIds[0]);
+          if (treeNode) {
+            setMenuPos({ x: event.clientX, y: event.clientY });
+            setMenuMode('node');
+            setSelectedNode(treeNode);
+          }
+        })
         .call(d3.drag<SVGGElement, GraphNode>()
           .on("start", (event, d) => {
             if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -302,6 +327,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
                 "w-full h-full",
                 zoom.isDragging ? "cursor-grabbing" : "cursor-grab"
               )}
+              onClick={() => setSelectedNode(null)}
             >
               <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="34" refY="3.5" orient="auto">
@@ -326,6 +352,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
       <div className="absolute top-4 right-4 bg-background/80 backdrop-blur p-2 rounded border text-xs text-muted-foreground">
         {t('graph_mode')}
       </div>
+      <NodeActionMenu node={selectedNode} position={menuPos} mode={menuMode} onClose={() => setSelectedNode(null)} />
     </div>
   );
 }
