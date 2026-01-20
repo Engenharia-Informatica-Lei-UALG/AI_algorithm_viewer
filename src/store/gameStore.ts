@@ -174,6 +174,13 @@ export const useGameStore = create<GameState>()((set) => ({
   toggleSimulation: () => set((state) => ({ isSimulating: !state.isSimulating })),
 
   reset: () => set((state) => {
+    // Se tivermos um backup da árvore customizada (estado original antes da simulação), restauramos ele.
+    // Caso contrário, limpamos a árvore atual.
+    let baseTree = state.tree;
+    if (state.problemType === 'custom' && state.savedCustomTree) {
+      baseTree = JSON.parse(JSON.stringify(state.savedCustomTree));
+    }
+
     const clearSimulationFields = (node: CustomTreeNode): CustomTreeNode => {
       const newNode = { ...node };
       delete newNode.isVisited;
@@ -195,7 +202,7 @@ export const useGameStore = create<GameState>()((set) => ({
     };
 
     return {
-      tree: clearSimulationFields(state.tree),
+      tree: clearSimulationFields(baseTree),
       depth: 0,
       nodesExplored: 0,
       isSimulating: false,
@@ -272,10 +279,16 @@ export const useGameStore = create<GameState>()((set) => ({
     // Só incrementamos o resetTrigger se NÃO estivermos simulando (edição manual/colagem)
     const shouldReset = !isSimulationUpdate;
 
+    // Se for update de simulação, não devemos sobrescrever o savedCustomTree
+    // para não perder os valores originais (heurísticas) com os valores calculados (minimax)
+    const newSavedTree = (state.problemType === 'custom' && !isSimulationUpdate)
+      ? newTree
+      : state.savedCustomTree;
+
     return {
       tree: newTree,
       resetTrigger: shouldReset ? state.resetTrigger + 1 : state.resetTrigger,
-      savedCustomTree: state.problemType === 'custom' ? newTree : state.savedCustomTree
+      savedCustomTree: newSavedTree
     };
   }),
 

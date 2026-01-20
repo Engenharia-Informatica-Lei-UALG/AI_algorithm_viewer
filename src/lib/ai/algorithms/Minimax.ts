@@ -46,11 +46,12 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     delete node.isCutoffPoint;
     delete node.pruningTriggeredBy;
     delete node.isVisited;
-    // Opcional: manter valor se for custom, mas para simulação limpa talvez seja melhor limpar se for calculado
-    // Mas se for valor heurístico base (folha), devemos manter?
-    // Minimax sobrescreve visualNode.value.
-    // Se for 'custom', o value original é a heurística. O algoritmo sobrescreve com minimax value.
-    // Melhor não deletar 'value' aqui para não perder a input do usuário nas folhas.
+
+    // Se o valor for Infinity ou -Infinity (resquício de simulação anterior ou init),
+    // limpamos para undefined, para não mostrar 'v:∞' antes de começar.
+    if (node.value === Infinity || node.value === -Infinity) {
+      node.value = undefined;
+    }
 
     if (node.children) {
       node.children.forEach(c => this.cleanTree(c));
