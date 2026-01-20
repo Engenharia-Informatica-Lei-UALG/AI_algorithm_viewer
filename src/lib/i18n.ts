@@ -160,7 +160,9 @@ const resources = {
         "execution_details": "Execution Details",
         "waiting": "(Waiting for simulation)",
         "depth_limit": "Current Iteration (Depth)",
-        "f_limit": "Current Iteration (f-Limit)"
+        "f_limit": "Current Iteration (f-Limit)",
+        "speed_hint": "Right-click to change speed!",
+        "sim_speed": "Simulation Speed"
       },
       "upload_tab": {
         "title": "Upload Image / Diagram",
@@ -334,7 +336,9 @@ const resources = {
         "execution_details": "Detalhes da Execução",
         "waiting": "(Aguardando simulação)",
         "depth_limit": "Iteração Atual (Prof.)",
-        "f_limit": "Iteração Atual (f-Limit)"
+        "f_limit": "Iteração Atual (f-Limit)",
+        "speed_hint": "Click direito p/ mudar vel.!",
+        "sim_speed": "Velocidade Simulação"
       },
       "upload_tab": {
         "title": "Upload de Imagem / Diagrama",

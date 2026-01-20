@@ -124,6 +124,7 @@ export const useGameStore = create<GameState>()((set) => ({
     mctsExploration: 1.414,
     useAlphaBeta: true,
     heuristicType: 'default',
+    simulationSpeed: 1500,
   },
 
   setAlgorithm: (algo) => set((state) => {

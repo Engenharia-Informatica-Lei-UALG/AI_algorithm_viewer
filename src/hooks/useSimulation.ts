@@ -161,7 +161,7 @@ export function useSimulation() {
     if (isSimulating) {
       const interval = setInterval(() => {
         executeStepRef.current();
-      }, 500);
+      }, searchSettings.simulationSpeed);
       return () => clearInterval(interval);
     }
   }, [isSimulating]);
