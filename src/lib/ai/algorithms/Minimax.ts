@@ -79,6 +79,10 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
 
     visualNode.isVisited = true;
 
+    // Inicializa o valor visual com o pior caso possível
+    let value = isMax ? -Infinity : Infinity;
+    visualNode.value = value;
+
     // Yield para visualização do nó atual sendo visitado
     // Usamos o ID visual como chave para garantir foco único na árvore
     yield {
@@ -112,8 +116,28 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       return utility;
     }
 
-    let value = isMax ? -Infinity : Infinity;
     const actions = this.problem.getActions(state);
+
+    // Se não houver ações possíveis, tratamos como nó terminal (folha)
+    // Isso resolve o problema de nós folhas não marcados como goal ficarem com valor Infinity
+    if (actions.length === 0) {
+      const utility = this.problem.getUtility ? this.problem.getUtility(state, 0) : 0;
+      visualNode.value = utility;
+      if (this.useAlphaBeta) {
+        visualNode.alpha = utility;
+        visualNode.beta = utility;
+      }
+      yield {
+        state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any,
+        depth,
+        pathCost: 0,
+        heuristic: 0,
+        action: null,
+        parent: null,
+        getScore: () => 0
+      };
+      return utility;
+    }
 
     // Variáveis para rastrear a origem do alpha/beta localmente
     let currentAlphaId = alphaId;

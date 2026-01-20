@@ -67,8 +67,8 @@ export function useSimulation() {
       case 'astar': algoInstance = FrontierSearch.createAStar(problem); break;
       case 'greedy': algoInstance = FrontierSearch.createGreedy(problem); break;
       case 'ucs': algoInstance = FrontierSearch.createUCS(problem); break;
-      case 'minimax': algoInstance = new Minimax(problem, 10, false); break;
-      case 'alpha-beta': algoInstance = new Minimax(problem, 10, true); break;
+      case 'minimax': algoInstance = new Minimax(problem, searchSettings.maxDepth, false); break;
+      case 'alpha-beta': algoInstance = new Minimax(problem, searchSettings.maxDepth, true); break;
       case 'mcts': algoInstance = new MCTS(problem, searchSettings.mctsIterations, searchSettings.mctsExploration); break;
       default: console.warn("Algoritmo não implementado:", algorithm);
     }
