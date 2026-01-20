@@ -177,12 +177,16 @@ const JSON_EXAMPLES = {
 };
 
 // --- SUB-COMPONENT PARA A ABA DE STATS ---
+/**
+ * Component for the statistics tab content.
+ * Displays real-time metrics about the search tree and algorithm execution.
+ */
 function StatsTabContent() {
   const { t } = useTranslation();
   const { nodesExplored, depth, algorithmStats, algorithm, tree } = useGameStore();
   const [showHint, setShowHint] = useState(false);
 
-  // Cálculos da estrutura
+  // Structural metrics calculation
   const treeMetrics = useMemo(() => {
     let totalChildren = 0;
     let maxDepth = 0;
@@ -197,7 +201,7 @@ function StatsTabContent() {
     return { totalChildren, maxDepth };
   }, [tree]);
 
-  // Verifica se deve mostrar a dica (apenas uma vez)
+  // Initial hint visibility logic
   useEffect(() => {
     const hasSeen = localStorage.getItem("has_seen_stats_hint");
     if (!hasSeen) {
@@ -210,10 +214,9 @@ function StatsTabContent() {
     localStorage.setItem("has_seen_stats_hint", "true");
   };
 
-  // Lista de algoritmos que usam Fronteira/Explorados
+  /** Determine if the current algorithm belongs to the search category. */
   const isSearchAlgo = algorithm && ['bfs', 'dfs', 'ids', 'ucs', 'greedy', 'astar', 'idastar'].includes(algorithm);
 
-  // Prepara as estatísticas para exibição, garantindo que as listas apareçam para algoritmos de busca
   const displayStats = { ...algorithmStats };
   if (isSearchAlgo) {
     if (!displayStats["Lista Aberta (Frontier)"]) displayStats["Lista Aberta (Frontier)"] = [t('stats_tab.waiting')];
@@ -224,15 +227,15 @@ function StatsTabContent() {
     <div className="space-y-4 relative h-full overflow-y-auto pb-10 pr-1 custom-scrollbar">
       <AnimatePresence>
         {showHint && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg text-[11px] font-bold flex items-start gap-2 mb-2 border border-primary-foreground/20"
           >
             <Sparkles size={14} className="text-yellow-400 shrink-0 animate-pulse" />
             <p className="flex-1 leading-tight">{t('stats_hint') as string}</p>
-            <button onClick={dismissHint} className="hover:bg-white/20 rounded p-0.5"><X size={12} /></button>
+            <button onClick={dismissHint} className="hover:bg-white/20 rounded p-0.5" title={t('dismiss_hint') as string}><X size={12} /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -291,6 +294,11 @@ function StatsTabContent() {
   );
 }
 
+/**
+ * The main side panel containing all editor and configuration tabs.
+ * Allows users to select algorithms, edit tree structures, import JSON,
+ * view statistics, and upload board images for AI analysis.
+ */
 export function EditorPanel() {
   const { tree, updateTree, setProblemType } = useGameStore()
   const { t } = useTranslation()
@@ -300,28 +308,28 @@ export function EditorPanel() {
     setJsonInput(JSON.stringify(tree, null, 2));
   }, [tree]);
 
+  /** Validates and loads a JSON problem definition into the store. */
   const handleLoadJson = () => {
     try {
       const parsed = JSON.parse(jsonInput);
       let targetTree = parsed;
       let detectedType: ProblemType = 'custom';
 
-      // Lógica de Detecção Inteligente
+      // Smart structure detection
       if (parsed.tree && parsed.tree.id) {
         targetTree = parsed.tree;
         detectedType = parsed.type || 'custom';
       } else if (parsed.type === 'tictactoe' || parsed.type === '8puzzle') {
         detectedType = parsed.type;
       } else if (parsed.boardState && Array.isArray(parsed.boardState)) {
-        // Fallback: detecta pelo conteúdo do boardState se o type estiver ausente
+        // Fallback detection based on board contents.
         const is8Puzzle = parsed.boardState.some((x: any) => typeof x === 'number');
         detectedType = is8Puzzle ? '8puzzle' : 'tictactoe';
       }
 
-      // Aplica o tipo de problema (isso muda a visualização automaticamente)
       setProblemType(detectedType);
 
-      // Pequeno delay para garantir que o store processou a mudança de tipo antes da árvore
+      // Async delay to ensure the store processes the type change before the tree structure.
       setTimeout(() => {
         updateTree(targetTree as CustomTreeNode);
       }, 50);
@@ -363,25 +371,25 @@ export function EditorPanel() {
                 <Sparkles size={10} /> {t('json_tab.quick_examples')}
               </span>
               <div className="grid grid-cols-2 gap-2">
-                <button 
+                <button
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tree, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
                   <TreePine size={12} /> {t('json_tab.tree')}
                 </button>
-                <button 
+                <button
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.minimax, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
                   <GitGraph size={12} /> {t('json_tab.minimax')}
                 </button>
-                <button 
+                <button
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tictactoe, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
                   <Gamepad2 size={12} /> {t('json_tab.tictactoe')}
                 </button>
-                <button 
+                <button
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.puzzle, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >

@@ -2,12 +2,26 @@ import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
 import { CustomTreeNode } from '@/types/game';
 
+/**
+ * Minimax algorithm implementation with optional Alpha-Beta Pruning.
+ * Designed for adversarial games and decision-making visualizations.
+ * Uses a Generator to allow step-by-step execution and state observation.
+ * 
+ * @template S - The type of State
+ * @template A - The type of Action
+ */
 export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<S, A> {
   private maxDepth: number;
   private useAlphaBeta: boolean;
   private tree: CustomTreeNode | null = null;
   private iterator: Generator<SearchNode<S, A> | null, number, void> | null = null;
 
+  /**
+   * Initializes a new Minimax instance.
+   * @param problem - The game/adversarial problem to solve.
+   * @param maxDepth - Maximum search depth.
+   * @param useAlphaBeta - Whether to enable Alpha-Beta pruning.
+   */
   constructor(problem: Problem<S, A>, maxDepth: number = 3, useAlphaBeta: boolean = false) {
     super(problem);
     this.maxDepth = maxDepth;
@@ -15,12 +29,14 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     this.initialize();
   }
 
+  /**
+   * Initializes the search state and prepares the visual tree.
+   * Sets up the iterator for step-by-step execution.
+   */
   protected initialize(): void {
     this.status = SearchStatus.RUNNING;
     this.nodesExplored = 0;
 
-    // Se o problema fornecer uma árvore (CustomTreeProblem), usamos a estrutura existente
-    // para não "apagar" o que o usuário definiu.
     if ((this.problem as any).rootNode) {
       this.tree = structuredClone((this.problem as any).rootNode);
       this.cleanTree(this.tree!);
@@ -35,10 +51,13 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       };
     }
 
-    // Inicializa o gerador que controlará a execução passo-a-passo
     this.iterator = this.minimaxGenerator(this.problem.initialState, -Infinity, Infinity, 0, this.tree!, 'root', 'root', true);
   }
 
+  /**
+   * Resets visualization-specific properties of a tree node.
+   * @param node - The node to clean.
+   */
   private cleanTree(node: CustomTreeNode) {
     delete node.alpha;
     delete node.beta;
@@ -47,8 +66,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     delete node.pruningTriggeredBy;
     delete node.isVisited;
 
-    // Se o valor for Infinity ou -Infinity (resquício de simulação anterior ou init),
-    // limpamos para undefined, para não mostrar 'v:∞' antes de começar.
     if (node.value === Infinity || node.value === -Infinity) {
       node.value = undefined;
     }
@@ -58,6 +75,12 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     }
   }
 
+  /**
+   * Performs a single step of the Minimax execution.
+   * Advances the generator and returns the current node of interest.
+   * 
+   * @returns The current SearchNode or null if completed.
+   */
   step(): SearchNode<S, A> | null {
     if (this.status !== SearchStatus.RUNNING) return null;
 
@@ -69,6 +92,19 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     return result.value;
   }
 
+  /**
+   * Generator function that implements the Minimax/Alpha-Beta search logic.
+   * Yields search nodes at each critical point for UI observation.
+   * 
+   * @param state - Current state
+   * @param alpha - Current alpha value
+   * @param beta - Current beta value
+   * @param depth - Current depth
+   * @param visualNode - Current visual node representation
+   * @param alphaId - Node ID where the current alpha originated
+   * @param betaId - Node ID where the current beta originated
+   * @param isMax - Whether the current level is Max or Min
+   */
   private *minimaxGenerator(state: S, alpha: number, beta: number, depth: number, visualNode: CustomTreeNode, alphaId: string, betaId: string, isMax: boolean): Generator<SearchNode<S, A> | null, number, void> {
     this.nodesExplored++;
 
@@ -79,12 +115,9 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
 
     visualNode.isVisited = true;
 
-    // Inicializa o valor visual com o pior caso possível
     let value = isMax ? -Infinity : Infinity;
     visualNode.value = value;
 
-    // Yield para visualização do nó atual sendo visitado
-    // Usamos o ID visual como chave para garantir foco único na árvore
     yield {
       state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any,
       depth,
@@ -98,7 +131,7 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     if (depth >= this.maxDepth || this.problem.isGoal(state)) {
       const utility = this.problem.getUtility ? this.problem.getUtility(state, 0) : 0;
       visualNode.value = utility;
-      // Em nós folha, alpha e beta tornam-se o próprio valor para visualização
+
       if (this.useAlphaBeta) {
         visualNode.alpha = utility;
         visualNode.beta = utility;
@@ -118,8 +151,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
 
     const actions = this.problem.getActions(state);
 
-    // Se não houver ações possíveis, tratamos como nó terminal (folha)
-    // Isso resolve o problema de nós folhas não marcados como goal ficarem com valor Infinity
     if (actions.length === 0) {
       const utility = this.problem.getUtility ? this.problem.getUtility(state, 0) : 0;
       visualNode.value = utility;
@@ -139,7 +170,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       return utility;
     }
 
-    // Variáveis para rastrear a origem do alpha/beta localmente
     let currentAlphaId = alphaId;
     let currentBetaId = betaId;
 
@@ -148,12 +178,8 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       const nextState = this.problem.getResult(state, action);
       const nextStateAny = nextState as any;
 
-      // Criar ID único. No modo custom, usamos o ID real do nó para manter a ligação.
-      // Em jogos, usamos o caminho hierárquico.
       const childId = nextStateAny.nodeId || `${visualNode.id}-${action.name.replace(/\s+/g, '_')}`;
 
-      // No modo custom, tentamos encontrar se o filho já existe na árvore base
-      // para não duplicar ou apagar o que o usuário definiu.
       let childVisualNode = visualNode.children.find(c => c.id === childId || c.id === (nextStateAny.nodeId || ''));
 
       if (!childVisualNode) {
@@ -167,7 +193,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
         visualNode.children.push(childVisualNode);
       }
 
-      // Chamada recursiva via yield* para manter o controle do gerador
       const childValue: number = yield* this.minimaxGenerator(
         nextState,
         alpha,
@@ -191,7 +216,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
               currentAlphaId = childVisualNode!.id;
             }
           }
-          // Yield de atualização (valor ou alpha)
           yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
         }
       } else {
@@ -206,7 +230,6 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
               currentBetaId = childVisualNode!.id;
             }
           }
-          // Yield de atualização (valor ou beta)
           yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
         }
       }
@@ -216,17 +239,16 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
           if (value >= beta) {
             this.handlePruning(state, visualNode, value, betaId, actions, i + 1);
             yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
-            return value; // Beta cutoff
+            return value;
           }
         } else {
           if (value <= alpha) {
             this.handlePruning(state, visualNode, value, alphaId, actions, i + 1);
             yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
-            return value; // Alpha cutoff
+            return value;
           }
         }
       } else {
-        // Se for minimax puro ou se o valor não melhorou, ainda assim retornamos o foco para o pai
         yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
       }
     }
@@ -234,6 +256,16 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     return value;
   }
 
+  /**
+   * Handles visual pruning of branches when a cutoff occurs.
+   * 
+   * @param state - The parent state
+   * @param visualNode - The parent visual node
+   * @param value - The cutoff value
+   * @param triggerId - The ID of the node that triggered the pruning
+   * @param actions - All possible actions from this state
+   * @param startIndex - The index of the first action to be pruned
+   */
   private handlePruning(state: S, visualNode: CustomTreeNode, value: number, triggerId: string, actions: A[], startIndex: number) {
     visualNode.value = value;
     visualNode.isCutoffPoint = true;
@@ -244,22 +276,18 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
       const nextState = this.problem.getResult(state, action);
       const nextStateAny = nextState as any;
 
-      // Tenta encontrar o nó filho correspondente
-      // Prioridade: ID explícito (custom) ou gerado (dinâmico)
       const targetId = nextStateAny.nodeId || `${visualNode.id}-${action.name.replace(/\s+/g, '_')}`;
 
       const existingChild = visualNode.children.find(c =>
         c.id === targetId ||
-        c.id === nextStateAny.nodeId || // Fallback para ID direto
-        c.name === action.name // Fallback final (menos seguro)
+        c.id === nextStateAny.nodeId ||
+        c.name === action.name
       );
 
       if (existingChild) {
-        // Se o nó já existe, marcamos ele como podado
         existingChild.isPruned = true;
         existingChild.pruningTriggeredBy = triggerId;
       } else {
-        // Se não existe (árvore dinâmica não expandida), criamos o nó fantasma
         const prunedId = `${visualNode.id}-${action.name.replace(/\s+/g, '_')}-pruned`;
         if (!visualNode.children.some(c => c.id === prunedId)) {
           visualNode.children.push({
@@ -276,8 +304,12 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     }
   }
 
+  /**
+   * Returns the current visual tree representation.
+   * @returns {CustomTreeNode}
+   */
   public getTree(): CustomTreeNode {
-    // Retornamos um clone profundo que preserva Infinity/-Infinity
     return structuredClone(this.tree!);
   }
 }
+

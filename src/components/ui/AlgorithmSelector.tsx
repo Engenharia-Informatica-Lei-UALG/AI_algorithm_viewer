@@ -33,6 +33,12 @@ import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon } from "lucide-react"
 import { EightPuzzleBoard, TicTacToeBoard } from "../game/Boards"
 
+/**
+ * Component for selecting and configuring AI search algorithms.
+ * Handles the selection of search strategies (blind, heuristic, adversarial),
+ * problem domain configuration (Tic-Tac-Toe, 8-Puzzle, Custom Tree),
+ * and algorithm-specific parameters (MCTS exploration, Alpha-Beta pruning visuals).
+ */
 export function AlgorithmSelector() {
   const {
     algorithm,
@@ -62,6 +68,9 @@ export function AlgorithmSelector() {
   const [goalInput, setGoalInput] = useState(goalState?.join(' ') || "")
   const { t } = useTranslation()
 
+  /**
+   * Catalog of supported algorithms with their respective metadata.
+   */
   const algorithms = [
     {
       id: 'bfs',
@@ -135,19 +144,29 @@ export function AlgorithmSelector() {
     }
   ] as const;
 
+  /**
+   * Resets algorithm-specific UI state when the active algorithm changes.
+   */
   useEffect(() => {
     setIsCollapsed(!!algorithm)
     setAdmissibilityResult(null)
-    // Evita resetar violações se já estiver vazio para não disparar re-render
+    // Avoid resetting violations if already empty to prevent unnecessary re-renders.
     setAdmissibilityViolations([])
   }, [algorithm, setAdmissibilityViolations]);
 
+  /**
+   * Synchronizes the text input for the 8-puzzle goal state.
+   */
   useEffect(() => {
     if (problemType === '8puzzle') {
       setGoalInput(goalState?.join(' ') || "")
     }
   }, [goalState, problemType]);
 
+  /**
+   * Validates and updates the 8-puzzle goal state from a raw string input.
+   * Expects 9 unique numbers from 0-8.
+   */
   const handleGoalInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     setGoalInput(input);
@@ -161,65 +180,55 @@ export function AlgorithmSelector() {
   const selectedAlgo = algorithms.find(a => a.id === algorithm);
   const isAdversarial = selectedAlgo?.category === 'adversarial';
 
+  /**
+   * Performs a local analysis of the custom tree to check for heuristic 
+   * admissibility (h(n) <= h*(n)) and consistency.
+   * Displays the result and highlights violations in the visualization.
+   */
   const handleCheckAdmissibility = () => {
-    // Usa a função do store para alternar ou calcular
     toggleAdmissibility();
-    
-    // Atualiza o estado local de resultado para mostrar a mensagem de texto
-    // Nota: Como toggleAdmissibility é síncrono no store, podemos ler o estado atualizado logo após?
-    // Não diretamente com o hook, mas podemos replicar a lógica de exibição baseada no store.
-    
-    // Se o store agora tem violações, mostramos "Não Admissível".
-    // Se não tem, e acabamos de rodar... bem, o toggleAdmissibility não retorna o resultado para aqui.
-    // Vamos manter a lógica local APENAS para a mensagem de texto, mas usar o store para o visual (vermelho).
-    
-    // Mas espere, se o usuário clicar para "limpar", o store limpa.
-    // Se o usuário clicar para "verificar", o store verifica.
-    
-    // Vamos simplificar: Se já tem violações (vermelho), o clique limpa tudo (store e local).
+
+    // If violations already exist, clicking again clears them (toggle behavior).
     if (admissibilityViolations.length > 0) {
-        setAdmissibilityResult(null);
-        return;
+      setAdmissibilityResult(null);
+      return;
     }
 
-    // Se não tem, calculamos para mostrar a mensagem
     const violationIds: string[] = [];
     const violationDetails: string[] = [];
+
+    /**
+     * Recursively calculates the actual minimum cost to a goal state (h*).
+     */
     const getMinCostToGoal = (node: CustomTreeNode): number => {
       if (node.isGoal) return 0;
       if (!node.children || node.children.length === 0) return Infinity;
       const costs = node.children.map(child => (child.costToParent || 0) + getMinCostToGoal(child));
       return Math.min(...costs);
     };
+
+    /**
+     * Validates a node's heuristic value against the actual minimum cost.
+     */
     const validateNode = (node: CustomTreeNode) => {
       const h = node.value || 0;
       const hStar = getMinCostToGoal(node);
-      // Verifica consistência: h(n) <= c(n, n') + h(n')
-      // Mas aqui estamos verificando admissibilidade estrita h <= h* para a mensagem?
-      // O store verifica consistência local. Vamos alinhar.
-      
-      // O store usa: hCurrent > cost + hChild (Consistência)
-      // Vamos usar a mesma lógica do store para consistência visual.
-      
-      // Mas para a mensagem "Admissível", geralmente se espera h <= h*.
-      // Vamos manter a verificação de h <= h* para a mensagem de texto, pois é mais forte.
+
+      // Strict admissibility check: h(n) must not overestimate h*(n).
       if (hStar !== Infinity && h > hStar) {
         violationIds.push(node.id);
         violationDetails.push(`${node.name}: h(${h}) > h*(${hStar})`);
       }
       node.children?.forEach(validateNode);
     };
+
     validateNode(tree);
-    
     setAdmissibilityResult({ isAdmissible: violationIds.length === 0, violations: violationDetails });
-    // O store já foi atualizado pelo toggleAdmissibility? Não, precisamos chamar o toggle se quisermos o visual.
-    // O problema é que o toggleAdmissibility do store usa a lógica de consistência local, e aqui usamos h*.
-    // Se quisermos que o botão "Verificar" mostre o vermelho, devemos confiar no store.
-    
-    // Se o store toggleAdmissibility foi chamado no início, ele usou a lógica de consistência.
-    // Se quisermos alinhar, devemos usar apenas o store.
   };
 
+  /**
+   * Filters the algorithm catalog based on search query and category.
+   */
   const filteredAlgorithms = algorithms.filter(algo => {
     const matchesSearch = algo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       algo.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -229,6 +238,9 @@ export function AlgorithmSelector() {
 
   const categories = ['all', 'blind', 'heuristic', 'adversarial'];
 
+  /**
+   * Helper component to render geometric icons representing node shapes.
+   */
   const ShapeIcon = ({ shape }: { shape: NodeShape }) => {
     if (shape === 'circle') return <Circle size={14} />;
     if (shape === 'triangle') return <Triangle size={14} />;
@@ -263,7 +275,7 @@ export function AlgorithmSelector() {
             </div>
           </div>
 
-          {/* Menu de Tipo de Problema */}
+          {/* Problem Domain Selection */}
           <div className="space-y-3 pt-2">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <Settings2 size={12} />
@@ -293,7 +305,7 @@ export function AlgorithmSelector() {
             <div className="h-px bg-border/50 mt-2" />
           </div>
 
-          {/* Menus de Configuração Específicos */}
+          {/* Context-Specific Configuration Panels */}
           <AnimatePresence mode="wait">
             {problemType === '8puzzle' && (
               <motion.div
@@ -308,13 +320,18 @@ export function AlgorithmSelector() {
                   <h4 className="text-xs font-black uppercase tracking-widest">{t('goal_state')}</h4>
                 </div>
                 <EightPuzzleBoard board={goalState || []} size="sm" />
-                <input
-                  type="text"
-                  value={goalInput}
-                  onChange={handleGoalInputChange}
-                  placeholder="Ex: 1 2 3 4 5 6 7 8 0"
-                  className="w-full text-center font-mono bg-muted/50 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
+                <div className="space-y-1">
+                  <label htmlFor="goal-state-input" className="text-[10px] font-bold uppercase text-muted-foreground">{t('goal_state')}</label>
+                  <input
+                    id="goal-state-input"
+                    type="text"
+                    value={goalInput}
+                    onChange={handleGoalInputChange}
+                    placeholder="Ex: 1 2 3 4 5 6 7 8 0"
+                    title={t('goal_state') as string}
+                    className="w-full text-center font-mono bg-muted/50 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
               </motion.div>
             )}
 
@@ -334,9 +351,9 @@ export function AlgorithmSelector() {
                   onClick={handleCheckAdmissibility}
                   className={cn(
                     "w-full py-2 rounded-lg text-xs font-bold transition-all",
-                    admissibilityViolations.length > 0 
-                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
-                        : "bg-primary text-primary-foreground hover:opacity-90"
+                    admissibilityViolations.length > 0
+                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      : "bg-primary text-primary-foreground hover:opacity-90"
                   )}
                 >
                   {admissibilityViolations.length > 0 ? t('clear_visualization') : t('check_admissibility')}
@@ -442,33 +459,35 @@ export function AlgorithmSelector() {
                 </div>
 
                 <div className="space-y-3">
-                   <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase text-muted-foreground">{t('exploration_constant')}</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold">{searchSettings.mctsExploration.toFixed(2)}</span>
-                          <button
-                            onClick={() => updateSearchSettings({ mctsExploration: 1.414 })}
-                            className="p-1 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors"
-                            title="Resetar para padrão (1.414)"
-                          >
-                            <RotateCcw size={10} />
-                          </button>
-                        </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="exploration-slider" className="text-[10px] font-bold uppercase text-muted-foreground">{t('exploration_constant')}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold">{searchSettings.mctsExploration.toFixed(2)}</span>
+                        <button
+                          onClick={() => updateSearchSettings({ mctsExploration: 1.414 })}
+                          className="p-1 hover:bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors"
+                          title="Reset to default (1.414)"
+                        >
+                          <RotateCcw size={10} />
+                        </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.05"
-                        value={searchSettings.mctsExploration}
-                        onChange={(e) => updateSearchSettings({ mctsExploration: parseFloat(e.target.value) })}
-                        className="w-full accent-primary cursor-pointer"
-                      />
-                      <p className="text-[10px] text-muted-foreground leading-tight">
-                        {t('mcts_desc')}
-                      </p>
-                   </div>
+                    </div>
+                    <input
+                      id="exploration-slider"
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.05"
+                      value={searchSettings.mctsExploration}
+                      onChange={(e) => updateSearchSettings({ mctsExploration: parseFloat(e.target.value) })}
+                      title={t('exploration_constant') as string}
+                      className="w-full accent-primary cursor-pointer"
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {t('mcts_desc')}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -476,13 +495,14 @@ export function AlgorithmSelector() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Search and Filters */}
+          {/* Search bar and algorithm category filters */}
           <div className="space-y-3">
             <div className="relative">
               <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder={t('search_placeholder')}
+                aria-label={t('search_placeholder') as string}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-muted/50 border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -517,7 +537,7 @@ export function AlgorithmSelector() {
                   key={algo.id}
                   onClick={() => {
                     setAlgorithm(algo.id as AlgorithmType);
-                    // Se escolher MCTS e estiver em Árvore, muda automaticamente para um jogo
+                    // Automatically switch to a game problem if MCTS is selected while on Custom Tree.
                     if (algo.id === 'mcts' && problemType === 'custom') {
                       setProblemType('tictactoe');
                     }

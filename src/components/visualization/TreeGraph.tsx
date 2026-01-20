@@ -16,14 +16,30 @@ import { useTranslation } from 'react-i18next';
 
 // --- SUB-COMPONENT: PROBLEM VISUALIZER ---
 
+/**
+ * Properties for the ProblemVisualizer component.
+ */
 interface ProblemVisualizerProps {
+  /** The domain type of the problem instance. */
   problemType: string;
+  /** The current state node containing the board data. */
   node: CustomTreeNode;
+  /** Visual scale of the board rendering. */
   size?: 'xs' | 'sm' | 'md' | 'lg';
+  /** Whether the user can interact with the board cells. */
   interactive?: boolean;
+  /** Callback triggered when a tile is moved in 8-puzzle mode. */
   onEightPuzzleMove?: (tileIndex: number) => void;
 }
 
+/**
+ * Helper component that renders the appropriate board visualization 
+ * based on the current problem type (Tic-Tac-Toe or 8-Puzzle).
+ * 
+ * @param problemType - Type of problem ('tictactoe', '8puzzle').
+ * @param node - The state node with board data.
+ * @param size - Visual scale factor.
+ */
 const ProblemVisualizer: React.FC<ProblemVisualizerProps> = ({
   problemType,
   node,
@@ -50,13 +66,26 @@ const ProblemVisualizer: React.FC<ProblemVisualizerProps> = ({
 
 // --- SUB-COMPONENT: NODE ACTION MENU ---
 
+/**
+ * Properties for the NodeActionMenu component.
+ */
 interface NodeActionMenuProps {
+  /** The node for which the menu is being displayed. */
   node: CustomTreeNode | null;
+  /** Screen coordinates where the menu should appear. */
   position: { x: number; y: number };
+  /** Callback to close the menu. */
   onClose: () => void;
+  /** Context of the interaction: editing the node itself or its incoming edge. */
   mode?: 'node' | 'edge';
 }
 
+/**
+ * Searches for a node by ID within a recursive tree structure.
+ * @param root The root of the sub-tree to search.
+ * @param id The target node ID.
+ * @returns {CustomTreeNode | null} The found node or null.
+ */
 export const findNodeRecursive = (root: CustomTreeNode, id: string): CustomTreeNode | null => {
   if (root.id === id) return root;
   for (const child of root.children) {
@@ -66,6 +95,12 @@ export const findNodeRecursive = (root: CustomTreeNode, id: string): CustomTreeN
   return null;
 };
 
+/**
+ * Searches for the parent of a node with the given ID.
+ * @param root The current root of exploration.
+ * @param targetId The ID of the child node.
+ * @returns {CustomTreeNode | null} The parent node or null if not found/root.
+ */
 export const findParentRecursive = (root: CustomTreeNode, targetId: string): CustomTreeNode | null => {
   for (const child of root.children) {
     if (child.id === targetId) return root;
@@ -75,6 +110,10 @@ export const findParentRecursive = (root: CustomTreeNode, targetId: string): Cus
   return null;
 };
 
+/**
+ * Interactive context menu for managing node properties, adding children, and editing game states.
+ * Adapts its features based on the active algorithm (Search, Minimax, MCTS).
+ */
 export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'node' }: NodeActionMenuProps) {
   const { addNode, updateNodeAttributes, removeNode, algorithm, problemType, tree, searchSettings } = useGameStore();
   const [isEditingValue, setIsEditingValue] = useState(false);
@@ -87,16 +126,19 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const [ticTacToeTool, setTicTacToeTool] = useState<'X' | 'O' | null>('X');
   const { t } = useTranslation();
 
+  /** Ensures we always reference the most up-to-date node data from the global store. */
   const currentNode = useMemo(() => {
     if (!initialNode) return null;
     return findNodeRecursive(tree, initialNode.id) || initialNode;
   }, [tree, initialNode]);
 
+  /** references the parent node to calculate metrics like UCB1. */
   const parentNode = useMemo(() => {
     if (!currentNode) return null;
     return findParentRecursive(tree, currentNode.id);
   }, [tree, currentNode]);
 
+  /** Synchronizes local edit state with node data when selection changes. */
   useEffect(() => {
     if (currentNode) {
       if (initialNode?.id !== currentNode.id) {
@@ -123,13 +165,20 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const hasChildren = currentNode.children && currentNode.children.length > 0;
   const isAdversarial = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
   const isGameProblem = problemType === 'tictactoe' || problemType === '8puzzle';
-  const showAlphaBeta = algorithm === 'minimax' || algorithm === 'alpha-beta';
   const isMCTS = algorithm === 'mcts';
 
   const handleAddChild = () => {
     const id = Math.random().toString(36).substr(2, 9);
     const initialBoard = currentNode.boardState ? [...currentNode.boardState] : undefined;
-    addNode(currentNode.id, { id, name: `Node ${id.substr(0, 2)}`, value: 0, children: [], costToParent: 1, isGoal: false, boardState: initialBoard });
+    addNode(currentNode.id, {
+      id,
+      name: `Node ${id.substr(0, 2)}`,
+      value: 0,
+      children: [],
+      costToParent: 1,
+      isGoal: false,
+      boardState: initialBoard
+    });
     onClose();
   };
 
@@ -142,7 +191,10 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
   const handleSaveName = () => {
     const isGoalName = editName.toLowerCase().trim() === 'goal';
-    updateNodeAttributes(currentNode.id, { name: editName, isGoal: (!isAdversarial && isGoalName) ? true : currentNode.isGoal });
+    updateNodeAttributes(currentNode.id, {
+      name: editName,
+      isGoal: (!isAdversarial && isGoalName) ? true : currentNode.isGoal
+    });
     setIsEditingName(false);
     onClose();
   };
@@ -165,17 +217,16 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
     }
   };
 
-  // Cálculos MCTS
+  /** Calculation of node-specific MCTS metrics for UI debugging. */
   let mctsStats = null;
   if (isMCTS && currentNode) {
-    const N = (parentNode as any)?.visits || 0; // Visitas do pai
-    const n = (currentNode as any).visits || 0; // Visitas do nó
-    const v = currentNode.value || 0;  // Valor médio (Q/n) já calculado pelo algoritmo
+    const N = (parentNode as any)?.visits || 0;
+    const n = (currentNode as any).visits || 0;
+    const v = currentNode.value || 0;
     const C = searchSettings.mctsExploration;
 
-    // Evita divisão por zero e logs inválidos
     const explorationTerm = (n > 0 && N > 0) ? C * Math.sqrt(Math.log(N) / n) : 0;
-    const ucbScore = v + explorationTerm; // Simplificado (assume Max player para visualização)
+    const ucbScore = v + explorationTerm;
 
     mctsStats = { N, n, v, explorationTerm, ucbScore };
   }
@@ -192,22 +243,32 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         <div className="flex items-center justify-between px-2 py-1 border-b mb-1">
           {isEditingName ? (
             <div className="flex gap-1 items-center w-full mr-2">
-              <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-background border rounded px-1 text-xs h-6" onKeyDown={(e) => e.key === 'Enter' && handleSaveName()} />
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full bg-background border rounded px-1 text-xs h-6"
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+              />
               <button onClick={handleSaveName} className="text-primary"><Check size={14} /></button>
             </div>
           ) : (
-            <span className="text-xs font-bold truncate cursor-pointer hover:text-primary" onClick={() => mode === 'node' && setIsEditingName(true)} title="Clique para renomear">
-              {mode === 'edge' ? `Custo para ${currentNode.name}` : currentNode.name}
+            <span
+              className="text-xs font-bold truncate cursor-pointer hover:text-primary"
+              onClick={() => mode === 'node' && setIsEditingName(true)}
+              title="Click to rename"
+            >
+              {mode === 'edge' ? `Cost to ${currentNode.name}` : currentNode.name}
             </span>
           )}
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0"><X size={14} /></button>
         </div>
 
-        {/* SEÇÃO DE ESPECIFICAÇÕES ALPHA-BETA */}
+        {/* ALPHA-BETA SPECIFIC METRICS */}
         {algorithm === 'alpha-beta' && mode === 'node' && (
           <div className="p-2 bg-orange-500/5 rounded-md border border-orange-500/10 mb-1 space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-orange-600">
-              <Zap size={12} /> Especificações Alpha-Beta
+              <Zap size={12} /> Alpha-Beta Metrics
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-background p-1.5 rounded border flex flex-col">
@@ -222,29 +283,29 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
           </div>
         )}
 
-        {/* SEÇÃO DE ESPECIFICAÇÕES MCTS */}
+        {/* MCTS SPECIFIC METRICS */}
         {isMCTS && mctsStats && mode === 'node' && (
           <div className="p-2 bg-primary/5 rounded-md border border-primary/10 mb-1 space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-              <Calculator size={12} /> Especificações MCTS
+              <Calculator size={12} /> MCTS Metrics
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-background p-1.5 rounded border flex flex-col">
                 <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                  <Eye size={9} /> Visitas (n)
+                  <Eye size={9} /> Visits (n)
                 </span>
                 <span className="font-mono font-bold">{mctsStats.n}</span>
               </div>
               <div className="bg-background p-1.5 rounded border flex flex-col">
                 <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                  <GitFork size={9} /> Filhos
+                  <GitFork size={9} /> Children
                 </span>
                 <span className="font-mono font-bold">{currentNode.children.length}</span>
               </div>
               <div className="bg-background p-1.5 rounded border flex flex-col col-span-2">
                 <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                  <Trophy size={9} /> Pontuação UCB1
+                  <Trophy size={9} /> UCB1 Score
                 </span>
                 <div className="flex justify-between items-end">
                   <span className="font-mono font-bold text-primary">{mctsStats.ucbScore.toFixed(4)}</span>
@@ -257,7 +318,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
             {parentNode && (
               <div className="text-[9px] text-muted-foreground text-center border-t border-primary/10 pt-1">
-                Visitas do Pai (N): <span className="font-mono font-bold">{mctsStats.N}</span>
+                Parent Visits (N): <span className="font-mono font-bold">{mctsStats.N}</span>
               </div>
             )}
           </div>
@@ -266,7 +327,9 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         {isEditingBoard ? (
           <div className="p-2 flex flex-col items-center gap-3 bg-muted/30 rounded-md">
             <div className="flex justify-between w-full items-center">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground">{problemType === '8puzzle' ? t('editor.swap_tiles') : t('editor.change_cells')}</span>
+              <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                {problemType === '8puzzle' ? t('editor.swap_tiles') : t('editor.change_cells')}
+              </span>
               <button onClick={() => setIsEditingBoard(false)} className="text-xs text-primary hover:underline">{t('editor.finish')}</button>
             </div>
             {problemType === 'tictactoe' && (
@@ -347,13 +410,24 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
 
 // --- MAIN TREE GRAPH COMPONENT ---
 
+/**
+ * Properties for the TreeGraph component.
+ */
 interface TreeGraphProps {
+  /** Recursive data structure representing the search tree. */
   data: CustomTreeNode & { isCurrent?: boolean };
+  /** Width of the component container. */
   width: number;
+  /** Height of the component container. */
   height: number;
+  /** Optional trigger to reset zoom and center the tree. */
   zoomResetTrigger?: number;
 }
 
+/**
+ * Component for hierarchical tree visualization.
+ * Uses Visx for SVG management and D3 for hierarchical layout calculation.
+ */
 export default function TreeGraph({ data, width, height, zoomResetTrigger }: TreeGraphProps) {
   const { algorithm, maxNodeShape, minNodeShape, admissibilityViolations, nodeViewMode, problemType, updateNodeAttributes, followActiveNode } = useGameStore();
   const { t } = useTranslation();
@@ -367,7 +441,10 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   const minNodeWidth = problemType === 'tictactoe' ? 160 : 120;
   const minNodeHeight = problemType === 'tictactoe' ? 200 : 160;
 
-  // Calculamos o layout manualmente para ter acesso às coordenadas (x, y) fora do JSX
+  /**
+   * manual layout calculation using D3 Tree to access precise coordinates (x, y) 
+   * for centering and camera-following logic.
+   */
   const { layoutRoot, treeWidth, treeHeight } = useMemo(() => {
     const h = hierarchy(data);
     const tw = Math.max(h.leaves().length * minNodeWidth, minNodeWidth);
@@ -378,19 +455,17 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     return { layoutRoot: treeLayout(h), treeWidth: tw, treeHeight: th };
   }, [data, minNodeWidth, minNodeHeight]);
 
+  /**
+   * Effect to center the tree when the data structure or container dimensions change.
+   */
   useEffect(() => {
     if (zoomRef.current && width > 0 && height > 0) {
-      // Lógica de centralização inteligente
       const rootX = treeWidth / 2;
-
-      // Calculamos o deslocamento exato (tx, ty) para que o centro da árvore
-      // coincida com o centro do componente visual.
-      // Compensamos o offset de 50px aplicado no <Group top={50} left={50}>
+      // Exact displacement calculation to align tree center with viewport center.
+      // Compensates for the 50px offset in the SVG Group.
       const tx = (width / 2) - (rootX + 50);
       const ty = (height / 2) - (treeHeight / 2 + 50);
 
-      // Usamos setTransformMatrix para definir a posição e escala de forma atómica.
-      // Isto evita que a biblioteca tente calcular transições entre estados parciais.
       zoomRef.current.setTransformMatrix({
         scaleX: 1,
         scaleY: 1,
@@ -400,9 +475,12 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
         skewY: 0,
       });
     }
-  }, [zoomResetTrigger, width, height, treeWidth, treeHeight]); // Recalcula se a largura mudar
+  }, [zoomResetTrigger, width, height, treeWidth, treeHeight]);
 
-  // Lógica para seguir o nó ativo
+  /** 
+   * Effect to automatically move the camera to center the currently active node 
+   * during algorithm simulation.
+   */
   useEffect(() => {
     if (followActiveNode && zoomRef.current && width > 0 && height > 0) {
       const activeNode = layoutRoot.descendants().find(d => {
@@ -411,13 +489,9 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       });
 
       if (activeNode) {
-        // Centra o nó ativo. 
-        // Somamos 50 devido ao offset do <Group top={50} left={50}>
-        // Usamos scale atual para manter a consistência do zoom
         const currentMatrix = zoomRef.current.transformMatrix;
         const scale = currentMatrix.scaleX;
 
-        // Calcula a posição para centralizar o nó
         const tx = (width / 2) - (activeNode.x + 50) * scale;
         const ty = (height / 2) - (activeNode.y + 50) * scale;
 
@@ -447,6 +521,10 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     setSelectedNode(node);
   };
 
+  /**
+   * Handles board interactions specifically for the 8-puzzle problem.
+   * Validates move legality before updating state.
+   */
   const handle8PuzzleMove = (nodeHierarchy: any, tileIndex: number) => {
     const currentNode = nodeHierarchy.data as CustomTreeNode;
     const parentNode = nodeHierarchy.parent?.data as CustomTreeNode;
@@ -475,6 +553,10 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   const showAlphaBeta = algorithm === 'minimax' || algorithm === 'alpha-beta';
   const isMCTS = algorithm === 'mcts';
 
+  /** 
+   * Detects if a node represents a repeated state in the current path.
+   * Used to highlight cycles in search.
+   */
   const isRepeatedNode = (node: any) => {
     let current = node.parent;
     while (current) {
@@ -512,7 +594,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
               fontSize={40}
               fill="red"
               fontWeight="bold"
-              style={{ pointerEvents: 'none' }}
+              className="pointer-events-none"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
@@ -542,7 +624,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       <Group>
         <motion.polygon points="-30,20 30,20 0,-32" {...commonProps} />
         {isPruned && (
-          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" className="pointer-events-none" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
         )}
       </Group>
     );
@@ -551,7 +633,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       <Group>
         <motion.rect x={-26} y={-26} width={52} height={52} rx={4} {...commonProps} />
         {isPruned && (
-          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" className="pointer-events-none" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
         )}
       </Group>
     );
@@ -560,7 +642,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       <Group>
         <motion.circle r={28} {...commonProps} />
         {isPruned && (
-          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" className="pointer-events-none" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
         )}
       </Group>
     );
@@ -570,10 +652,10 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     <div className="relative w-full h-full overflow-hidden bg-background rounded-xl border-2 border-border shadow-inner transition-colors duration-300">
       <Zoom width={width} height={height} scaleXMin={1 / 4} scaleXMax={4} scaleYMin={1 / 4} scaleYMax={4}>
         {(zoom) => (
-          <div className="relative w-full h-full overflow-hidden" ref={(node) => {
+          <div className="relative w-full h-full overflow-hidden touch-none" ref={(node) => {
             if (zoom.containerRef) (zoom.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
             zoomRef.current = zoom;
-          }} style={{ touchAction: 'none' }}>
+          }}>
             <svg width={width} height={height} className={cn("w-full h-full", zoom.isDragging ? "cursor-grabbing" : "cursor-grab")} onClick={() => setSelectedNode(null)}>
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" className="text-muted/10" /></pattern>
@@ -590,7 +672,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                     return (
                       <Group key={`link-${sourceData.id}-${targetData.id}`} opacity={isPruned ? 0.3 : 1}>
                         <LinkVertical data={link} stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={isPruned ? "5,5" : "none"} className="text-muted-foreground/30" />
-                        {/* Visualização de Corte (Linhas Vermelhas) */}
+                        {/* Pruning Visualization (Red Crosshairs) */}
                         {isPruned && (
                           <Group top={(link.source.y + link.target.y) / 2} left={(link.source.x + link.target.x) / 2}>
                             <motion.g
@@ -650,15 +732,15 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
 
                         {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
 
-                        {/* Nome do Nó */}
+                        {/* Node Label */}
                         <text
                           dy={isGameMode ? (problemType === 'tictactoe' ? -75 : -65) : ".33em"}
                           fontSize={isGameMode ? 10 : 11}
                           fontWeight="bold"
                           textAnchor="middle"
-                          style={{ pointerEvents: 'none' }}
                           fill="currentColor"
                           className={cn(
+                            "pointer-events-none",
                             isGameMode ? "text-muted-foreground" : (isCurrent || isGoal || admissibilityViolations.includes(nodeData.id) ? "text-white" : "text-foreground"),
                             isPruned && "opacity-30"
                           )}
@@ -666,7 +748,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                           {nodeData.name}
                         </text>
 
-                        {/* Visualização de Valor/Heurística */}
+                        {/* Value/Heuristic Visualization */}
                         {((showHeuristic && !isMCTS) || showAlphaBeta) && nodeData.value !== undefined && !isPruned && (
                           <Group top={nodeViewMode === 'game' ? 85 : 45} left={0}>
                             <rect x={-25} y={-12} width={50} height={24} rx={12} fill="currentColor" className="text-slate-800 shadow-xl" />
@@ -676,7 +758,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
                           </Group>
                         )}
 
-                        {/* Visualização de Alpha-Beta (Superior) */}
+                        {/* Alpha-Beta Visualization (Floating above node) */}
                         {algorithm === 'alpha-beta' && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
                           <Group top={nodeViewMode === 'game' ? -120 : -80} left={0}>
                             <motion.g

@@ -2,6 +2,12 @@ import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
 import { CustomTreeNode } from '@/types/game';
 
+/**
+ * Concrete implementation of a SearchNode for IDS.
+ * 
+ * @template S - The type of State
+ * @template A - The type of Action
+ */
 class NodeImpl<S extends State, A extends Action> implements SearchNode<S, A> {
   constructor(
     public state: S,
@@ -12,11 +18,23 @@ class NodeImpl<S extends State, A extends Action> implements SearchNode<S, A> {
     public depth: number
   ) { }
 
+  /**
+   * Calculates the node score.
+   * @returns {number}
+   */
   getScore(): number {
     return this.pathCost + this.heuristic;
   }
 }
 
+/**
+ * Iterative Deepening Search (IDS) algorithm.
+ * Combines BFS's optimality (for unit costs) with DFS's space efficiency.
+ * It repeatedly applies Depth-Limited Search with increasing depth limits.
+ * 
+ * @template S - The type of State
+ * @template A - The type of Action
+ */
 export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A> {
   private currentLimit: number = 0;
   private stack: SearchNode<S, A>[] = [];
@@ -24,12 +42,20 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
   private visualNodeMap: Map<SearchNode<S, A>, CustomTreeNode> = new Map();
   private maxAllowedDepth: number;
 
+  /**
+   * Initializes a new IDS instance.
+   * @param problem - The problem to solve.
+   * @param maxAllowedDepth - Safety limit for the search depth.
+   */
   constructor(problem: Problem<S, A>, maxAllowedDepth: number = 50) {
     super(problem);
     this.maxAllowedDepth = maxAllowedDepth;
     this.initialize();
   }
 
+  /**
+   * Initializes the algorithm by resetting metrics and starting from depth 0.
+   */
   protected initialize(): void {
     this.currentLimit = 0;
     this.nodesExplored = 0;
@@ -37,15 +63,17 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     this.prepareIteration();
   }
 
+  /**
+   * Re-initializes the DFS stack for a new depth-limit iteration.
+   */
   private prepareIteration(): void {
     const rootState = this.problem.initialState;
     const rootNode = new NodeImpl<S, A>(rootState, null, null, 0, 0, 0);
     this.stack = [rootNode];
-    
-    // Reiniciamos a árvore visual para mostrar a iteração atual claramente
+
     this.visualRoot = {
       id: `ids-l${this.currentLimit}-root`,
-      name: `Start (Limit ${this.currentLimit})`,
+      name: `Start (Limit: ${this.currentLimit})`,
       children: [],
       boardState: (rootState as any).board,
     };
@@ -53,18 +81,23 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     this.visualNodeMap.set(rootNode, this.visualRoot);
   }
 
+  /**
+   * Performs a single step of the IDS algorithm.
+   * Processes the top node from the DFS stack. If the stack is empty, 
+   * increments the depth limit and restarts the search.
+   * 
+   * @returns The explored node, or null if an iteration ended.
+   */
   step(): SearchNode<S, A> | null {
     if (this.status !== SearchStatus.RUNNING) return null;
 
     if (this.stack.length === 0) {
-      // Se a pilha esvaziar, aumentamos o limite e recomeçamos
       this.currentLimit++;
-      if (this.currentLimit > this.maxAllowedDepth) { 
+      if (this.currentLimit > this.maxAllowedDepth) {
         this.status = SearchStatus.FAILED;
         return null;
       }
       this.prepareIteration();
-      // Retornamos null para criar uma pausa visual entre iterações
       return null;
     }
 
@@ -79,7 +112,7 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
 
     if (node.depth < this.currentLimit) {
       const actions = this.problem.getActions(node.state);
-      // Ordem DFS: empilhamos na ordem inversa para processar na ordem original
+
       for (let i = actions.length - 1; i >= 0; i--) {
         const action = actions[i];
         const nextState = this.problem.getResult(node.state, action);
@@ -91,7 +124,7 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
           0,
           node.depth + 1
         );
-        
+
         this.stack.push(child);
 
         const parentVisual = this.visualNodeMap.get(node);
@@ -112,15 +145,24 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     return node;
   }
 
+  /**
+   * Returns the visual tree structure for the current depth-limit iteration.
+   * @returns {CustomTreeNode}
+   */
   public getTree(): CustomTreeNode {
     return this.visualRoot!;
   }
 
+  /**
+   * Returns current IDS attributes for UI display.
+   * @returns A record containing the current depth limit.
+   */
   public getAttributes(): Record<string, string | number | string[]> {
     return {
-      "Limite Atual (Depth Limit)": this.currentLimit,
-      "Profundidade Máxima Permitida": this.maxAllowedDepth,
-      "Nós na Pilha": this.stack.length
+      "Current Depth Limit": this.currentLimit,
+      "Max Allowed Depth": this.maxAllowedDepth,
+      "Stack Size": this.stack.length
     };
   }
 }
+

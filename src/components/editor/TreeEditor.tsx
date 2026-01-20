@@ -8,8 +8,6 @@ import { RotateCcw, MousePointer2, Plus, Trash2, Edit2, Check, X } from "lucide-
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 
-// --- TREE NODE ITEM COMPONENT ---
-
 interface TreeNodeItemProps {
   node: CustomTreeNode
   onAddAction: (parentId: string, node: CustomTreeNode) => void
@@ -18,6 +16,10 @@ interface TreeNodeItemProps {
   isRoot?: boolean
 }
 
+/**
+ * Component representing a single node in the tree hierarchy editor.
+ * Provides controls for editing node attributes, adding children, and removing the node.
+ */
 export function TreeNodeItem({
   node,
   onAddAction,
@@ -33,6 +35,7 @@ export function TreeNodeItem({
   const [cost, setCost] = useState(node.costToParent?.toString() || "1")
   const [isGoal, setIsGoal] = useState(node.isGoal || false)
 
+  /** Handles adding a new child node with a unique ID. */
   const handleAdd = () => {
     const id = Math.random().toString(36).substr(2, 9);
     onAddAction(node.id, {
@@ -45,6 +48,7 @@ export function TreeNodeItem({
     })
   }
 
+  /** Persists edited node attributes to the global store. */
   const handleSave = () => {
     onUpdateAction(node.id, {
       name,
@@ -156,6 +160,11 @@ export function TreeNodeItem({
 
 // --- MAIN TREE EDITOR COMPONENT ---
 
+/**
+ * Main editor interface for modifying search problems.
+ * Provides specialized board editors for Tic-Tac-Toe and 8-Puzzle,
+ * or a recursive tree editor for custom state-space problems.
+ */
 export function TreeEditor() {
   const { t } = useTranslation()
   const { tree, addNode, removeNode, updateNodeAttributes, problemType } = useGameStore()
@@ -164,6 +173,7 @@ export function TreeEditor() {
   const initialTicTacToe = Array(9).fill(null);
   const initial8Puzzle = [1, 2, 3, 4, 5, 6, 7, 8, 0];
 
+  /** Handles board interaction for Tic-Tac-Toe state editing. */
   const handleTicTacToeClick = (index: number) => {
     const newBoard = [...(tree.boardState || initialTicTacToe)];
     if (newBoard[index] === ticTacToeTool) {
@@ -174,6 +184,7 @@ export function TreeEditor() {
     updateNodeAttributes('root', { boardState: newBoard });
   };
 
+  /** Handles board interaction for 8-Puzzle state editing using sliding logic. */
   const handle8PuzzleClick = (index: number) => {
     const newBoard = [...(tree.boardState || initial8Puzzle)];
     const emptyIndex = newBoard.indexOf(0);
@@ -220,7 +231,7 @@ export function TreeEditor() {
             className={cn("w-10 h-10 flex items-center justify-center rounded-md transition-all",
               ticTacToeTool === null ? 'bg-foreground text-background shadow-md ring-2 ring-offset-2 ring-foreground' : 'bg-background text-muted-foreground'
             )}
-            title="Limpar Célula"
+            title="Clear Cell"
           >
             <MousePointer2 size={20} />
           </button>

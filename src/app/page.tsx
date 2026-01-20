@@ -9,6 +9,10 @@ import { EditorPanel } from "@/components/layout/EditorPanel"
 import { Instagram, Github, BookOpen } from "lucide-react"
 import Link from 'next/link'
 
+/**
+ * Main entry point for the AI Algorithm Viewer application.
+ * Renders the dashboard layout including the visualization panel and editor panels.
+ */
 export default function Home() {
   const { t, i18n } = useTranslation();
   const { tree, problemType, algorithm } = useGameStore()
@@ -20,7 +24,10 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  // Memoize visxData to prevent unnecessary re-renders of the graph
+  /**
+   * Memoizes the tree data formatted for Visx to prevent unnecessary 
+   * re-renders of the expensive SVG graph component.
+   */
   const visxData = useMemo(() =>
     convertToVisx(tree, visitedNodes, currentNodeId, problemType, algorithm),
     [tree, visitedNodes, currentNodeId, problemType, algorithm]
@@ -89,9 +96,19 @@ export default function Home() {
   );
 }
 
+/**
+ * Transforms the internal tree structure into a format suitable for @visx/hierarchy.
+ * Handles state-to-key mapping for cycle detection and node highlighting.
+ * 
+ * @param node - The current node in the recursive structure.
+ * @param visitedSet - Set of state keys that have been visited by the algorithm.
+ * @param currentNodeId - The unique key of the node currently under exploration.
+ * @param problemType - Domain type (Tic-Tac-Toe, 8-Puzzle, etc.).
+ * @param algorithm - The active search algorithm.
+ */
 function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string | null, problemType: string, algorithm: string | null): any {
-  // Para algoritmos que constroem árvores de busca (Minimax, MCTS, Alpha-Beta),
-  // o ID do nó é a chave única real, pois o mesmo estado pode aparecer em ramos diferentes.
+  // For algorithms that build unique search trees (Minimax, MCTS, Alpha-Beta),
+  // the node's unique ID is the identifying key, as the same state can recur in different branches.
   const isTreeAlgo = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
 
   let stateKey = node.id;

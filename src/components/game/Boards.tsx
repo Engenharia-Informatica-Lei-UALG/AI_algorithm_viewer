@@ -2,16 +2,29 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { getWinnerInfo, WINNING_LINES } from '@/lib/ai/problems/TicTacToe';
 
-// --- TIC TAC TOE BOARD ---
+// --- TIC-TAC-TOE BOARD ---
 
+/**
+ * Properties for the TicTacToeBoard component.
+ */
 interface TicTacToeBoardProps {
+    /** 1D array of 9 marks ('X', 'O', or null) or a node object containing boardState. */
     board: (string | null)[] | any;
+    /** Optional CSS class name for styling. */
     className?: string;
+    /** Dynamic sizing preset. 'xs' is optimized for tree node embedding. */
     size?: 'xs' | 'sm' | 'md' | 'lg';
+    /** Callback triggered when a cell is clicked. */
     onCellClick?: (index: number) => void;
+    /** Whether the board allows user interaction. */
     interactive?: boolean;
 }
 
+/**
+ * Renders a 3x3 grid for Tic-Tac-Toe.
+ * Supports different sizes and interactive modes. 
+ * Automatically highlights the winning line if a winner is detected.
+ */
 export const TicTacToeBoard: React.FC<TicTacToeBoardProps> = ({
     board,
     className,
@@ -19,6 +32,9 @@ export const TicTacToeBoard: React.FC<TicTacToeBoardProps> = ({
     onCellClick,
     interactive = false
 }) => {
+    /**
+     * Extracts normalized board data from the input prop.
+     */
     const getBoardData = (): (string | null)[] => {
         if (Array.isArray(board) && board.length === 9) return board;
         if (board && typeof board === 'object' && 'boardState' in board && Array.isArray((board as any).boardState) && (board as any).boardState.length === 9) {
@@ -40,6 +56,9 @@ export const TicTacToeBoard: React.FC<TicTacToeBoardProps> = ({
     const { cellSize, gap, stroke, p } = styles[size] || styles.md;
     const isTreeMode = size === 'xs';
 
+    /**
+     * Calculates the CSS position and orientation for the winning strike-through line.
+     */
     const getLinePosition = (line: number[]) => {
         const lineIndex = WINNING_LINES.findIndex(l => l.every((v, i) => v === line[i]));
         switch (lineIndex) {
@@ -99,17 +118,30 @@ export const TicTacToeBoard: React.FC<TicTacToeBoardProps> = ({
     );
 };
 
-// --- EIGHT PUZZLE BOARD ---
+// --- EIGHT-PUZZLE BOARD ---
 
+/**
+ * Properties for the EightPuzzleBoard component.
+ */
 interface EightPuzzleBoardProps {
+    /** 1D array of 9 integers (0-8) where 0 is the empty tile. */
     board: number[] | any;
+    /** Optional CSS class name for styling. */
     className?: string;
+    /** Dynamic sizing preset. 'xs' is optimized for tree node embedding. */
     size?: 'xs' | 'sm' | 'md' | 'lg';
+    /** Callback triggered when a tile is clicked. */
     onTileClick?: (index: number) => void;
+    /** Whether the tiles allow user interaction (sliding). */
     interactive?: boolean;
+    /** Index of a tile to be visually highlighted. */
     highlightIndex?: number | null;
 }
 
+/**
+ * Renders a sliding tile puzzle board.
+ * Features neon-styled tiles and smooth animations for state changes.
+ */
 export const EightPuzzleBoard: React.FC<EightPuzzleBoardProps> = ({
     board,
     className,
@@ -118,6 +150,9 @@ export const EightPuzzleBoard: React.FC<EightPuzzleBoardProps> = ({
     interactive = false,
     highlightIndex
 }) => {
+    /**
+     * Extracts normalized board data from the input prop.
+     */
     const getBoardData = (): number[] => {
         if (Array.isArray(board) && board.length === 9) return board;
         if (board && typeof board === 'object' && 'boardState' in board && Array.isArray((board as any).boardState) && (board as any).boardState.length === 9) {

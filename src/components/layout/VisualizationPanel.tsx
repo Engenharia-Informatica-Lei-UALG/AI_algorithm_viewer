@@ -17,6 +17,11 @@ interface VisualizationPanelProps {
   onFastForwardAction: () => void;
 }
 
+/**
+ * The main visualization container for the search tree/graph.
+ * Provides controls for stepping through algorithms, toggling view modes (Tree vs. Force-Directed),
+ * and managing visualization settings like zoom and camera follow.
+ */
 export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, onFastForwardAction }: VisualizationPanelProps) {
   const { t } = useTranslation()
   const { algorithm, isSimulating, reset, nodesExplored, problemType, followActiveNode, setFollowActiveNode } = useGameStore()
@@ -24,6 +29,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
   const [showHint, setShowHint] = useState(false)
   const [zoomResetTrigger, setZoomResetTrigger] = useState(0)
 
+  // Hint persistence logic
   useEffect(() => {
     const hasSeenHint = localStorage.getItem('has_seen_view_toggle_hint')
     if (!hasSeenHint && problemType === 'custom') {
@@ -31,6 +37,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
     }
   }, [problemType])
 
+  /** Suppresses the structural view hint for the remainder of the session. */
   const dismissHint = () => {
     setShowHint(false)
     localStorage.setItem('has_seen_view_toggle_hint', 'true')
@@ -52,7 +59,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
               >
                 <SkipBack size={18} />
               </button>
-              
+
               <button
                 onClick={onStepAction}
                 disabled={!algorithm || isSimulating}
@@ -102,61 +109,61 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
           </div>
 
           <div className="flex items-center gap-4">
-            {/* View Mode Toggle */}
+            {/* View Mode Toggle (Tree vs. Force Graph) */}
             {problemType === 'custom' && (
-                <div className="relative flex bg-muted/50 rounded-lg border p-1 gap-1">
-                    <AnimatePresence>
-                      {showHint && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className="absolute -bottom-16 right-0 z-50 min-w-[200px]"
-                        >
-                          <div className="bg-primary text-primary-foreground text-[11px] font-bold p-3 rounded-xl shadow-2xl border border-primary-foreground/20 relative">
-                            {/* Seta do balão */}
-                            <div className="absolute -top-1 right-6 w-3 h-3 bg-primary rotate-45" />
-                            
-                            <div className="flex items-start gap-2">
-                              <Sparkles size={14} className="text-yellow-400 shrink-0 animate-pulse" />
-                              <p className="leading-tight">{t('view_hint') as string}</p>
-                              <button 
-                                onClick={dismissHint}
-                                className="hover:bg-white/20 rounded p-0.5 transition-colors"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <button
-                        onClick={() => setViewMode('tree')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'tree' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="Vista de Árvore"
+              <div className="relative flex bg-muted/50 rounded-lg border p-1 gap-1">
+                <AnimatePresence>
+                  {showHint && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="absolute -bottom-16 right-0 z-50 min-w-[200px]"
                     >
-                        <GitBranch size={16} />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('graph')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'graph' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="Vista de Grafo (Force-Directed)"
-                    >
-                        <Network size={16} />
-                    </button>
-                </div>
+                      <div className="bg-primary text-primary-foreground text-[11px] font-bold p-3 rounded-xl shadow-2xl border border-primary-foreground/20 relative">
+                        {/* Balloon tail/arrow */}
+                        <div className="absolute -top-1 right-6 w-3 h-3 bg-primary rotate-45" />
+
+                        <div className="flex items-start gap-2">
+                          <Sparkles size={14} className="text-yellow-400 shrink-0 animate-pulse" />
+                          <p className="leading-tight">{t('view_hint') as string}</p>
+                          <button
+                            onClick={dismissHint}
+                            className="hover:bg-white/20 rounded p-0.5 transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  onClick={() => setViewMode('tree')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'tree' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Tree View"
+                >
+                  <GitBranch size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('graph')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'graph' ? 'bg-background shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Graph View (Force-Directed)"
+                >
+                  <Network size={16} />
+                </button>
+              </div>
             )}
 
             <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t('algorithm')}:</span>
-                <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t('algorithm')}:</span>
+              <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
                 {algorithm ? algorithm.toUpperCase() : "---"}
-                </span>
+              </span>
             </div>
           </div>
         </div>
-        
+
         <div className="flex-1 bg-background relative overflow-hidden">
           <ParentSize>
             {({ width, height }) => (

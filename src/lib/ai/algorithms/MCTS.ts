@@ -2,13 +2,35 @@ import { SearchAlgorithm, SearchStatus } from '../core/SearchAlgorithm';
 import { Problem, SearchNode, State, Action } from '../core/types';
 import { CustomTreeNode } from '@/types/game';
 
+/**
+ * Represents a node in the Monte Carlo Tree Search.
+ * 
+ * @template S - The type of State
+ * @template A - The type of Action
+ */
 class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
+  /** Number of times this node has been visited. */
   public visits: number = 0;
+  /** Accumulated value (reward/utility) from simulations. */
   public value: number = 0;
+  /** Child nodes in the MCTS tree. */
   public children: MCTSNode<S, A>[] = [];
+  /** List of actions that haven't been expanded yet from this state. */
   public untriedActions: A[];
-  public id: string; // ID único para o nó MCTS
+  /** Unique identifier for the node, used for visualization stability. */
+  public id: string;
 
+  /**
+   * Initializes a new MCTS node.
+   * @param state - The state associated with this node.
+   * @param parent - The parent node in the MCTS tree.
+   * @param action - The action taken to reach this node.
+   * @param pathCost - Initial path cost (usually 0 for MCTS).
+   * @param heuristic - Initial heuristic (usually 0 for MCTS).
+   * @param depth - Node depth.
+   * @param problem - The problem instance.
+   * @param id - Unique node ID.
+   */
   constructor(
     public state: S,
     public parent: MCTSNode<S, A> | null,
@@ -23,19 +45,40 @@ class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
     this.id = id;
   }
 
+  /**
+   * Calculates the average value of the node.
+   * @returns {number}
+   */
   getScore() { return this.value / (this.visits || 1); }
 
+  /**
+   * Checks if all possible actions from this state have been expanded.
+   * @returns {boolean}
+   */
   isFullyExpanded(): boolean {
     return this.untriedActions.length === 0;
   }
 }
 
+/**
+ * Monte Carlo Tree Search (MCTS) algorithm implementation.
+ * Follows the Selection, Expansion, Simulation, and Backpropagation cycle.
+ * 
+ * @template S - The type of State
+ * @template A - The type of Action
+ */
 export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, A> {
   private root: MCTSNode<S, A> | null = null;
   private iterations: number;
   private cParam: number;
-  private nodeCounter: number = 0; // Contador global para IDs únicos
+  private nodeCounter: number = 0;
 
+  /**
+   * Initializes a new MCTS instance.
+   * @param problem - The problem to solve.
+   * @param iterations - Total number of MCTS iterations to perform.
+   * @param cParam - Exploration parameter (default: sqrt(2)).
+   */
   constructor(problem: Problem<S, A>, iterations: number = 1000, cParam: number = 1.414) {
     super(problem);
     this.iterations = iterations;
@@ -43,6 +86,9 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
     this.initialize();
   }
 
+  /**
+   * Initializes the search by creating the root MCTS node.
+   */
   protected initialize(): void {
     this.nodeCounter = 0;
     this.root = new MCTSNode(
@@ -57,6 +103,11 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
     );
   }
 
+  /**
+   * Executes a single iteration of the MCTS algorithm.
+   * 
+   * @returns The node reached after expansion and simulation.
+   */
   step(): SearchNode<S, A> | null {
     if (this.nodesExplored >= this.iterations) {
       this.status = SearchStatus.COMPLETED;
@@ -90,7 +141,7 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
     // 3. Simulation (Rollout)
     let currentState = node.state;
     let depth = 0;
-    while (!this.problem.isGoal(currentState) && depth < 50) { // Limite de profundidade para evitar loops infinitos
+    while (!this.problem.isGoal(currentState) && depth < 50) {
       const actions = this.problem.getActions(currentState);
       if (actions.length === 0) break;
       const randomAction = actions[Math.floor(Math.random() * actions.length)];
@@ -98,8 +149,6 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
       depth++;
     }
 
-    // Assumindo jogo de soma zero [-1, 1] ou [0, 1]
-    // Precisamos de uma função de utilidade no problema
     const result = this.problem.getUtility ? this.problem.getUtility(currentState, 0) : 0;
 
     // 4. Backpropagation
@@ -111,9 +160,14 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
     }
 
     this.nodesExplored++;
-    return node; // Retorna o nó expandido/simulado
+    return node;
   }
 
+  /**
+   * Selects the best child according to the UCB1 formula.
+   * @param node - The parent node.
+   * @returns {MCTSNode} The best child node.
+   */
   private selectBestChild(node: MCTSNode<S, A>): MCTSNode<S, A> {
     const stateAny = node.state as any;
     let isMaxPlayer = true;
@@ -121,7 +175,6 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
       const maxPlayer = (this.problem as any).maxPlayer || 'X';
       isMaxPlayer = stateAny.playerTurn === maxPlayer;
     } else {
-      // Fallback for custom trees: assume alternation starting with Max at depth 0
       isMaxPlayer = node.depth % 2 === 0;
     }
 
@@ -136,30 +189,37 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
     );
   }
 
+  /**
+   * Generates a visual tree structure from the MCTS data.
+   * @returns {CustomTreeNode}
+   */
   public getTree(): CustomTreeNode {
     const convert = (node: MCTSNode<S, A>): CustomTreeNode => {
-      // Usamos o ID único gerado pelo MCTS para a visualização da árvore
-      // Isso garante que mesmo estados repetidos (transposições) tenham nós visuais distintos na árvore
       return {
         id: node.id,
         name: node.action ? node.action.name : 'Start',
         value: node.getScore(),
         boardState: (node.state as any).board || (node.state as any).boardState,
         children: node.children.map(child => convert(child)),
-        visits: node.visits // Opcional: para mostrar no tooltip
+        visits: node.visits
       } as any;
     };
 
     return convert(this.root!);
   }
 
+  /**
+   * Gathers algorithm-specific attributes for the UI statistics display.
+   * @returns A record of MCTS performance metrics.
+   */
   public getAttributes(): Record<string, string | number | string[]> {
     if (!this.root) return {};
     return {
-      "Iterações Totais": `${this.nodesExplored} / ${this.iterations}`,
-      "Visitas na Raiz": this.root.visits,
-      "Valor da Raiz": this.root.value.toFixed(2),
-      "Fator de Exploração (C)": this.cParam.toFixed(3)
+      "Total Iterations": `${this.nodesExplored} / ${this.iterations}`,
+      "Root Visits": this.root.visits,
+      "Root Value": this.root.value.toFixed(2),
+      "Exploration Factor (C)": this.cParam.toFixed(3)
     };
   }
 }
+

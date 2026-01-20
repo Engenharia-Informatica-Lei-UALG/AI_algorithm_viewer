@@ -6,16 +6,24 @@ import { ChevronRight, ChevronDown, Plus, Trash2, Target, Circle } from 'lucide-
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * An individual item in the hierarchical tree editor list.
+ * Displays board previews, name editors, and structural controls (add/remove).
+ * 
+ * @param node - The current tree node to render.
+ * @param depth - Recursion depth for indentation styling.
+ */
 const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, depth }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
-  const { 
-    problemType, algorithm, addNode, removeNode, updateNodeAttributes, 
-    isSimulating, nodesExplored 
+  const {
+    problemType, algorithm, addNode, removeNode, updateNodeAttributes,
+    isSimulating, nodesExplored
   } = useGameStore();
 
   const isLocked = isSimulating || nodesExplored > 0;
 
+  /** Adds a new child node to the current node. */
   const handleAddChild = (e: React.MouseEvent) => {
     e.stopPropagation();
     addNode(node.id, {
@@ -28,10 +36,11 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
     setIsExpanded(true);
   };
 
+  /** Toggles Tic-Tac-Toe cell states (X -> O -> empty) directly from the preview. */
   const handleCellClick = (index: number) => {
     if (isLocked || problemType !== 'tictactoe') return;
     const newBoard = [...node.boardState];
-    // Ciclo: null -> X -> O -> null
+    // Cycle: null -> X -> O -> null
     const current = newBoard[index];
     newBoard[index] = current === null ? 'X' : current === 'X' ? 'O' : null;
     updateNodeAttributes(node.id, { boardState: newBoard });
@@ -50,7 +59,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
           {node.children.length > 0 ? (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <Circle size={4} className="mx-1.5" />}
         </button>
 
-        {/* Visualização do Estado */}
+        {/* State Visualizer Previews */}
         <div className="shrink-0">
           {problemType === 'tictactoe' && node.boardState && (
             <TicTacToeBoard board={node.boardState} size="sm" onCellClick={handleCellClick} />
@@ -66,7 +75,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
         </div>
 
         <div className="flex-1 min-w-0">
-          <input 
+          <input
             className="bg-transparent border-none text-sm font-medium focus:ring-0 p-0 w-full"
             value={node.name}
             onChange={(e) => updateNodeAttributes(node.id, { name: e.target.value })}
@@ -74,7 +83,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
           />
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <span>{valueLabel}:</span>
-            <input 
+            <input
               type="number"
               className="bg-transparent border-b border-border/50 w-12 text-center focus:outline-none text-foreground"
               value={node.value ?? 0}
@@ -87,7 +96,7 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
 
         {!isLocked && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
+            <button
               onClick={() => updateNodeAttributes(node.id, { isGoal: !node.isGoal })}
               className={cn("p-1 rounded hover:bg-background", node.isGoal ? "text-yellow-500" : "text-muted-foreground")}
               title={t('editor.is_goal')}
@@ -113,10 +122,14 @@ const TreeItem: React.FC<{ node: CustomTreeNode; depth: number }> = ({ node, dep
   );
 };
 
+/**
+ * A streamlined, list-based editor for the search tree structure.
+ * Ideal for quickly building deep trees or editing adversarial states locally.
+ */
 export const SimplifiedTreeEditor: React.FC = () => {
   const { t } = useTranslation();
   const tree = useGameStore(state => state.tree);
-  
+
   return (
     <div className="h-full flex flex-col bg-card border rounded-xl overflow-hidden shadow-sm">
       <div className="p-3 border-b bg-muted/30 flex justify-between items-center">

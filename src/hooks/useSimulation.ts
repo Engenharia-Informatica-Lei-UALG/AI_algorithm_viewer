@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { AlgorithmType, ProblemType } from '@/types/game';
 import { CustomTreeProblem } from '@/lib/ai/problems/CustomTreeProblem';
 import { TicTacToe } from '@/lib/ai/problems/TicTacToe';
 import { EightPuzzle } from '@/lib/ai/problems/EightPuzzle';
@@ -12,6 +11,13 @@ import { IDAStar } from '@/lib/ai/algorithms/IDAStar';
 import { SearchAlgorithm, SearchStatus } from '@/lib/ai/core/SearchAlgorithm';
 import { Problem } from '@/lib/ai/core/types';
 
+/**
+ * Custom hook to manage the simulation of AI search algorithms.
+ * Handles algorithm initialization, step-by-step execution, history management,
+ * and automatic simulation timing.
+ * 
+ * @returns {Object} Simulation control functions and state.
+ */
 export function useSimulation() {
   const {
     algorithm,
@@ -28,17 +34,23 @@ export function useSimulation() {
     ticTacToeMaxPlayer
   } = useGameStore();
 
+  /** Reference to the current algorithm instance ensuring persistence across renders. */
   const searchAlgoRef = useRef<SearchAlgorithm<any, any> | null>(null);
+  /** Reference to the current problem formulation. */
   const problemRef = useRef<Problem<any, any> | null>(null);
 
+  /** History of visited node IDs to allow stepping back. */
   const [history, setHistory] = useState<string[]>([]);
+  /** Current index in the exploration history. */
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Inicializa o problema e o algoritmo
+  /**
+   * Effect to (re)initialize the problem and algorithm whenever the configuration changes.
+   * Handles setup for Tic-Tac-Toe, 8-Puzzle, and Custom Trees across all supported algorithms.
+   */
   useEffect(() => {
     if (!algorithm) return;
 
-    // Se mudou o algoritmo ou o problema, resetamos o histórico
     setHistory([]);
     setCurrentStep(0);
     setNodesExplored(0);
@@ -46,7 +58,6 @@ export function useSimulation() {
 
     let problem: Problem<any, any>;
 
-    // 1. Cria a instância do problema
     switch (problemType) {
       case 'tictactoe':
         problem = new TicTacToe(tree.boardState, ticTacToeMaxPlayer);
@@ -61,7 +72,6 @@ export function useSimulation() {
     }
     problemRef.current = problem;
 
-    // 2. Cria a instância do algoritmo com o problema
     let algoInstance: SearchAlgorithm<any, any> | null = null;
     switch (algorithm) {
       case 'bfs': algoInstance = FrontierSearch.createBFS(problem); break;
@@ -74,23 +84,29 @@ export function useSimulation() {
       case 'mcts': algoInstance = new MCTS(problem, searchSettings.mctsIterations, searchSettings.mctsExploration); break;
       case 'ids': algoInstance = new IDS(problem, searchSettings.maxDepth); break;
       case 'idastar': algoInstance = new IDAStar(problem, 5000); break;
-      default: console.warn("Algoritmo não implementado:", algorithm);
+      default: console.warn("Algorithm not implemented:", algorithm);
     }
     searchAlgoRef.current = algoInstance;
 
   }, [algorithm, resetTrigger, problemType, goalState, setNodesExplored, ticTacToeMaxPlayer, searchSettings]);
 
+  /**
+   * synchronizes the global explored nodes count with the local simulation step.
+   */
   useEffect(() => {
     setNodesExplored(currentStep);
   }, [currentStep, setNodesExplored]);
 
+  /**
+   * Executes a single step of the search algorithm.
+   * Updates visual structures for tree-based algorithms (Minimax, MCTS, IDS/IDA*).
+   */
   const executeStep = () => {
     if (currentStep < history.length) {
       setCurrentStep(c => c + 1);
       return;
     }
 
-    // Se já terminou, para a simulação
     const algo = searchAlgoRef.current;
     if (!algo) return;
 
@@ -101,13 +117,11 @@ export function useSimulation() {
 
     const node = algo.step();
     if (node) {
-      // Para problemas dinâmicos ou algoritmos que constroem árvores visuais (Minimax, MCTS, IDS, IDA*), atualizamos a árvore visual
       const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm as string);
       if ((problemType !== 'custom' || isTreeBasedAlgo) && 'getTree' in algo) {
         updateTree((algo as any).getTree(), true);
       }
 
-      // Atualiza estatísticas específicas do algoritmo (Fronteira, etc)
       if (algo.getAttributes) {
         setAlgorithmStats(algo.getAttributes());
       }
@@ -120,17 +134,21 @@ export function useSimulation() {
     }
   };
 
+  /**
+   * Reverts the simulation to the previous state in history.
+   */
   const stepBack = () => {
     setCurrentStep(c => Math.max(0, c - 1));
   };
 
-  // Padrão para evitar que o setInterval use valores antigos (stale closures)
-  // e para evitar que o timer resete a cada renderização
   const executeStepRef = useRef(executeStep);
   useEffect(() => {
     executeStepRef.current = executeStep;
   }, [executeStep]);
 
+  /**
+   * Automatically executes steps at a fixed interval when simulation is active.
+   */
   useEffect(() => {
     if (isSimulating) {
       const interval = setInterval(() => {
@@ -143,6 +161,10 @@ export function useSimulation() {
   const visitedNodes = useMemo(() => new Set(history.slice(0, currentStep)), [history, currentStep]);
   const currentNodeId = useMemo(() => history[currentStep - 1] || null, [history, currentStep]);
 
+  /**
+   * Rapidly advances the algorithm until termination or a safety threshold is reached.
+   * Prevents browser UI freezing by limiting steps for heavy algorithms like MCTS or IDS.
+   */
   const fastForward = () => {
     const algo = searchAlgoRef.current;
     if (!algo) return;
@@ -151,12 +173,9 @@ export function useSimulation() {
     let lastNode = null;
     let changed = false;
 
-    // Limite de segurança para evitar que o browser trave (Freeze protection)
-    // Algoritmos que geram muitas sub-árvores ou rollouts são limitados a 20 passos por clique
     let steps = 0;
     const maxSteps = (algorithm === 'mcts' || algorithm === 'idastar' || algorithm === 'ids') ? 20 : 1000;
 
-    // 1. Se o algoritmo ainda estiver rodando, executa até o fim instantaneamente
     while (algo.getStatus() !== SearchStatus.COMPLETED && algo.getStatus() !== SearchStatus.FAILED && steps < maxSteps) {
       const node = algo.step();
       if (!node) break;
@@ -168,7 +187,6 @@ export function useSimulation() {
       steps++;
     }
 
-    // 2. Se voltamos atrás no histórico, queremos pular para o fim do que já temos
     if (currentStep < history.length) changed = true;
 
     if (changed) {
@@ -195,3 +213,4 @@ export function useSimulation() {
     fastForward
   };
 }
+

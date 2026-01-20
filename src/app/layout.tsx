@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   description: "Interactive AI Algorithm Visualizer",
 };
 
+/**
+ * Root layout component for the application.
+ * Manages global fonts, metadata, and initializes the i18n context.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

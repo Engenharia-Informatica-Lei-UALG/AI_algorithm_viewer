@@ -9,52 +9,90 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { NodeActionMenu, findNodeRecursive } from './TreeGraph';
 
+/**
+ * Properties for the GraphVisualizer component.
+ */
 interface GraphVisualizerProps {
+  /** The root node of the tree to be visualized as a graph. */
   data: CustomTreeNode;
+  /** Width of the visualization container. */
   width: number;
+  /** Height of the visualization container. */
   height: number;
+  /** Optional trigger to force a zoom reset. */
   zoomResetTrigger?: number;
 }
 
+/**
+ * Extended D3 Node interface for graph visualization.
+ */
 interface GraphNode extends d3.SimulationNodeDatum {
+  /** Unique name/identifier for the node. */
   id: string;
+  /** IDs from the original tree structure that map to this graph node. */
   originalIds: string[];
+  /** Label for the node. */
   name: string;
+  /** Heuristic or utility value. */
   value?: number;
+  /** Whether this node is a goal state. */
   isGoal?: boolean;
+  /** Whether this node is the search starting point. */
   isStart?: boolean;
+  /** Whether the algorithm is currently focusing on this node. */
   isCurrent?: boolean;
+  /** Whether the node was previously visited. */
   isVisited?: boolean;
-  isViolation?: boolean; // Adicionado para controle visual
+  /** Whether the node contains a heuristic violation. */
+  isViolation?: boolean;
 }
 
+/**
+ * Extended D3 Link interface for graph edges.
+ */
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   source: string | GraphNode;
   target: string | GraphNode;
+  /** Transition cost between nodes. */
   cost?: number;
 }
 
+/**
+ * Component for visualizing tree structures as directed graphs using a D3 force simulation.
+ * Aggregates tree nodes with identical names into single graph nodes to represent state spaces.
+ * This view is useful for visualizing problems where states can be reached via multiple paths.
+ */
 function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisualizerProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  /** Reference to the D3 simulation instance to allow manual control. */
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
   const { admissibilityViolations, followActiveNode } = useGameStore();
-  
+
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
   const zoomRef = useRef<any>(null);
 
-  // Ref para guardar as posições anteriores dos nós e evitar "saltos" no re-render
+  /** 
+   * Tracks previous node positions to ensure visual continuity 
+   * when the data updates during simulation.
+   */
   const prevNodesRef = useRef<Map<string, GraphNode>>(new Map());
 
+  /**
+   * Resets the zoom state when triggered by user or layout changes.
+   */
   useEffect(() => {
     if (zoomRef.current) {
       zoomRef.current.reset();
     }
-    // Adicionamos width/height para garantir que resete se a janela mudar drasticamente
   }, [zoomResetTrigger, width, height]);
 
+  /**
+   * Transforms the recursive tree data into flat arrays of nodes and links.
+   * Merges nodes based on their human-readable name to form a state graph.
+   */
   const { nodes, links } = useMemo(() => {
     const uniqueNodes = new Map<string, GraphNode>();
     const links: GraphLink[] = [];
@@ -70,7 +108,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
           isCurrent: node.isCurrent,
           isGoal: node.isGoal,
           isStart: parentName === null,
-          // Mantém a posição anterior se existir, senão gera aleatória
+          // Preserves kinematic state from previous render cycle for smooth transitions
           x: prevNode ? prevNode.x : width / 2 + (Math.random() - 0.5) * 50,
           y: prevNode ? prevNode.y : height / 2 + (Math.random() - 0.5) * 50,
           fx: prevNode ? prevNode.fx : null,
@@ -108,14 +146,15 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
     const nodesArray = Array.from(uniqueNodes.values());
 
-    // Atualiza o ref com os novos objetos (que serão mutados pelo D3)
-    // para que na próxima renderização possamos recuperar suas posições
+    // Updates persistence map for the next rendering cycle
     prevNodesRef.current = new Map(nodesArray.map(n => [n.id, n]));
 
     return { nodes: nodesArray, links };
-  }, [data, width, height]); 
+  }, [data, width, height]);
 
-  // Lógica para seguir o nó ativo no Grafo
+  /**
+   * Centers the viewport on the currently active node if "Follow Node" is enabled.
+   */
   useEffect(() => {
     if (followActiveNode && zoomRef.current && width > 0 && height > 0) {
       const activeNode = nodes.find(n => n.isCurrent);
@@ -125,31 +164,34 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
     }
   }, [nodes, followActiveNode, width, height]);
 
-  // Atualiza estado visual (violações) sem reiniciar física
+  /**
+   * Synchronizes visual status (violations, current focus) without recreating the simulation.
+   * Performs direct DOM manipulation for styling performance.
+   */
   useEffect(() => {
     if (!svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
 
-    // Atualiza a propriedade isViolation nos dados dos nós
     nodes.forEach(n => {
       n.isViolation = n.originalIds.some(id => admissibilityViolations.includes(id));
     });
 
-    // Atualiza visualmente os nós existentes
     svg.selectAll<SVGGElement, GraphNode>(".nodes g circle")
       .attr("stroke", d => d.isViolation ? "#ef4444" : (d.isCurrent ? "#a855f7" : (d.isGoal ? "#15803d" : (d.isStart ? "#1d4ed8" : "currentColor"))))
       .attr("stroke-width", d => d.isViolation ? 4 : 3)
       .attr("fill", d => d.isViolation ? "#fee2e2" : (d.isCurrent ? "#f3e8ff" : (d.isGoal ? "#22c55e" : (d.isStart ? "#3b82f6" : "hsl(var(--card))"))));
 
-    // Reinicia levemente a simulação para garantir que o loop 'ticked' pegue as mudanças de cor
     if (simulationRef.current) {
       simulationRef.current.alpha(0.1).restart();
     }
 
   }, [admissibilityViolations, nodes]);
 
-  // Inicializa ou Atualiza a Simulação (Estrutura)
+  /**
+   * Initializes or updates the D3 force simulation with specific constraints.
+   * Configures forces: links, charge (repulsion), collision, and centering.
+   */
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -161,9 +203,6 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
     } else {
       simulationRef.current.nodes(nodes);
       (simulationRef.current.force("link") as d3.ForceLink<GraphNode, GraphLink>).links(links);
-
-      // Só reinicia alpha se a estrutura mudou significativamente (opcional)
-      // Para evitar pulos, podemos usar um alpha menor ou nem reiniciar se nodes.length for igual
       simulationRef.current.alpha(0.1).restart();
     }
 
@@ -179,6 +218,10 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
     const simulation = simulationRef.current;
 
+    /**
+     * Update function executed on every simulation tick.
+     * Manages raw SVG element properties for layout rendering.
+     */
     const ticked = () => {
       const svg = d3.select(svgRef.current);
 
@@ -291,7 +334,6 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
           })
         );
 
-      // Círculo base
       nodeEnter.append("circle")
         .attr("r", 25)
         .attr("stroke-width", 3);
@@ -335,12 +377,11 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
       <Zoom width={width} height={height}>
         {(zoom) => (
           <div
-            className="relative w-full h-full overflow-hidden"
-            ref={(node) => { 
+            className="relative w-full h-full overflow-hidden touch-none"
+            ref={(node) => {
               if (zoom.containerRef) (zoom.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-              zoomRef.current = zoom; 
+              zoomRef.current = zoom;
             }}
-            style={{ touchAction: 'none' }}
           >
             <svg
               ref={svgRef}
@@ -381,3 +422,4 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 }
 
 export default React.memo(GraphVisualizer);
+

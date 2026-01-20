@@ -9,34 +9,52 @@ import {
   SearchSettings
 } from '@/types/game'
 
+/**
+ * Interface representing the global state of the application.
+ * Manages configuration for algorithms, problem settings, tree structure, and simulation status.
+ */
 interface GameState {
+  /** The currently selected search algorithm. */
   algorithm: AlgorithmType
+  /** The type of problem being solved (Tic-Tac-Toe, 8-Puzzle, or Custom Tree). */
   problemType: ProblemType
+  /** Current search depth (mostly used for visualization). */
   depth: number
+  /** Number of nodes explored during the current simulation. */
   nodesExplored: number
+  /** Whether the simulation is currently running. */
   isSimulating: boolean
+  /** Trigger to force a reset of algorithm instances in hooks. */
   resetTrigger: number
+  /** Whether the camera should follow the currently active node. */
   followActiveNode: boolean
 
-  // Configurações Visuais e de Jogo
+  // Visual and Game Configurations
+  /** Shape used for Max nodes in adversarial search. */
   maxNodeShape: NodeShape
+  /** Shape used for Min nodes in adversarial search. */
   minNodeShape: NodeShape
+  /** toggles between standard shapes and game-specific board previews. */
   nodeViewMode: NodeViewMode
+  /** Target state for the 8-puzzle problem. */
   goalState: any | null
+  /** The player perspective the AI optimizes for in Tic-Tac-Toe. */
   ticTacToeMaxPlayer: 'X' | 'O'
 
-  // IDs de nós que violam a admissibilidade
+  /** List of node IDs that violate the consistency/admissibility heuristic rules. */
   admissibilityViolations: string[]
 
-  // Estatísticas dinâmicas do algoritmo (ex: Lista de Abertos, Fechados, UCB)
+  /** Generic container for algorithm-specific metrics (e.g., Frontier size). */
   algorithmStats: Record<string, any>
 
-  // Estado da Árvore Customizada
+  /** The root node of the current search tree or game state. */
   tree: CustomTreeNode
-  savedCustomTree: CustomTreeNode | null // Backup para quando mudar de tipo
+  /** Backup of the user's custom tree before simulation modifies values. */
+  savedCustomTree: CustomTreeNode | null
+  /** The ID of the currently selected node in the UI. */
   selectedNodeId: string | null
 
-  // Configurações de Busca
+  /** Configuration parameters for the search execution. */
   searchSettings: SearchSettings
 
   setAlgorithm: (algo: AlgorithmType) => void
@@ -47,19 +65,20 @@ interface GameState {
   reset: () => void
   setFollowActiveNode: (val: boolean) => void
 
-  // Ações de Configuração
+  // Configuration Actions
   setMaxNodeShape: (shape: NodeShape) => void
   setMinNodeShape: (shape: NodeShape) => void
   setNodeViewMode: (mode: NodeViewMode) => void
   setGoalState: (state: any) => void
   setTicTacToeMaxPlayer: (player: 'X' | 'O') => void
 
-  // Ações de Admissibilidade
+  // Utility Actions
   setAdmissibilityViolations: (ids: string[]) => void
   toggleAdmissibility: () => void
 
   setAlgorithmStats: (stats: Record<string, any>) => void
-  // Ações de Edição da Árvore
+
+  // Tree Modification Actions
   updateTree: (newTree: CustomTreeNode, isSimulationUpdate?: boolean) => void
   addNode: (parentId: string, node: CustomTreeNode) => void
   removeNode: (nodeId: string) => void
@@ -75,6 +94,10 @@ const initialTree: CustomTreeNode = {
   children: [],
 };
 
+/**
+ * Global store implementation using Zustand.
+ * Provides a centralized state for algorithm simulation and UI control.
+ */
 export const useGameStore = create<GameState>()((set) => ({
   algorithm: null,
   problemType: 'custom',
@@ -90,7 +113,6 @@ export const useGameStore = create<GameState>()((set) => ({
   algorithmStats: {},
   goalState: [1, 2, 3, 4, 5, 6, 7, 8, 0],
 
-  // Default settings
   maxNodeShape: 'triangle',
   minNodeShape: 'circle',
   nodeViewMode: 'shape',
@@ -118,8 +140,6 @@ export const useGameStore = create<GameState>()((set) => ({
   setProblemType: (type) => set((state) => {
     if (state.isSimulating) return state;
 
-    // Se o tipo for o mesmo, apenas garantimos que a simulação seja resetada
-    // para aceitar novos dados (como um novo JSON colado)
     if (state.problemType === type) {
       return {
         nodesExplored: 0,
@@ -147,11 +167,7 @@ export const useGameStore = create<GameState>()((set) => ({
       newTree = { id: 'root', name: 'Start', children: [], boardState: [1, 2, 3, 4, 5, 6, 7, 8, 0] };
       newGoalState = [1, 2, 3, 4, 5, 6, 7, 8, 0];
     } else {
-      if (savedCustomTree) {
-        newTree = savedCustomTree;
-      } else {
-        newTree = { id: 'root', name: 'Start', children: [] };
-      }
+      newTree = savedCustomTree ? savedCustomTree : { id: 'root', name: 'Start', children: [] };
       newGoalState = null;
     }
 
@@ -174,13 +190,14 @@ export const useGameStore = create<GameState>()((set) => ({
   toggleSimulation: () => set((state) => ({ isSimulating: !state.isSimulating })),
 
   reset: () => set((state) => {
-    // Se tivermos um backup da árvore customizada (estado original antes da simulação), restauramos ele.
-    // Caso contrário, limpamos a árvore atual.
     let baseTree = state.tree;
     if (state.problemType === 'custom' && state.savedCustomTree) {
       baseTree = JSON.parse(JSON.stringify(state.savedCustomTree));
     }
 
+    /**
+     * Helper to clear runtime-specific fields from node objects during reset.
+     */
     const clearSimulationFields = (node: CustomTreeNode): CustomTreeNode => {
       const newNode = { ...node };
       delete newNode.isVisited;
@@ -190,8 +207,6 @@ export const useGameStore = create<GameState>()((set) => ({
       delete newNode.isCutoffPoint;
       delete newNode.pruningTriggeredBy;
 
-      // Se for um jogo, mantemos apenas a raiz e limpamos filhos
-      // Se for custom, mantemos a estrutura mas limpamos os campos acima
       if (state.problemType === 'tictactoe' || state.problemType === '8puzzle') {
         newNode.children = [];
         delete newNode.value;
@@ -241,13 +256,15 @@ export const useGameStore = create<GameState>()((set) => ({
 
   setAlgorithmStats: (stats) => set({ algorithmStats: stats }),
 
+  /**
+   * Identifies all nodes that violate search consistency rules (monotonicity).
+   * A violation occurs if h(n) > cost(n, n') + h(n').
+   */
   toggleAdmissibility: () => set((state) => {
-    // Se já houver violações sendo exibidas, limpa (toggle off) para remover a animação
     if (state.admissibilityViolations.length > 0) {
       return { admissibilityViolations: [] };
     }
 
-    // Caso contrário, calcula as violações
     const violations: string[] = [];
     const checkRecursive = (node: CustomTreeNode) => {
       if (!node.children) return;
@@ -255,11 +272,8 @@ export const useGameStore = create<GameState>()((set) => ({
       for (const child of node.children) {
         const hCurrent = node.value || 0;
         const hChild = child.value || 0;
-        const cost = child.costToParent ?? 1; // Assume custo 1 se não definido, para evitar falsos positivos
+        const cost = child.costToParent ?? 1;
 
-        // Violação se a heurística do pai for maior que o custo real + heurística do filho
-        // h(n) <= c(n, n') + h(n')
-        // Violação: h(n) > c(n, n') + h(n')
         if (hCurrent > cost + hChild) {
           if (!violations.includes(node.id)) {
             violations.push(node.id);
@@ -273,16 +287,13 @@ export const useGameStore = create<GameState>()((set) => ({
     return { admissibilityViolations: violations };
   }),
 
+  /**
+   * Updates the global tree structure. 
+   * Protects original user configurations from being overwritten by simulation updates.
+   */
   updateTree: (newTree, isSimulationUpdate = false) => set((state) => {
-    // Ao atualizar a árvore, se estivermos no modo custom, 
-    // salvamos como o novo "estado mestre" para persistência na sessão
-
-    // Se estivermos simulando, NÃO queremos resetar o gatilho, pois o updateTree é chamado passo a passo
-    // Só incrementamos o resetTrigger se NÃO estivermos simulando (edição manual/colagem)
     const shouldReset = !isSimulationUpdate;
 
-    // Se for update de simulação, não devemos sobrescrever o savedCustomTree
-    // para não perder os valores originais (heurísticas) com os valores calculados (minimax)
     const newSavedTree = (state.problemType === 'custom' && !isSimulationUpdate)
       ? newTree
       : state.savedCustomTree;
@@ -294,6 +305,9 @@ export const useGameStore = create<GameState>()((set) => ({
     };
   }),
 
+  /**
+   * Adds a new child node to a specific parent in the tree.
+   */
   addNode: (parentId, newNode) => set((state) => {
     if (state.isSimulating) return state;
 
@@ -310,6 +324,9 @@ export const useGameStore = create<GameState>()((set) => ({
     });
   }),
 
+  /**
+   * Removes a specific node and its entire subtree.
+   */
   removeNode: (nodeId) => set((state) => {
     if (state.isSimulating) return state;
     if (nodeId === 'root') return state;
@@ -328,6 +345,9 @@ export const useGameStore = create<GameState>()((set) => ({
     });
   }),
 
+  /**
+   * Updates the properties (name, value, etc.) of a specific node.
+   */
   updateNodeAttributes: (nodeId, attributes) => set((state) => {
     if (state.isSimulating) return state;
 
@@ -344,3 +364,4 @@ export const useGameStore = create<GameState>()((set) => ({
     });
   })
 }))
+
