@@ -73,6 +73,5 @@ export interface SearchSettings {
     /** The heuristic function selected for specific problems. */
     heuristicType: 'default' | 'manhattan' | 'misplaced';
     /** The speed of the simulation in milliseconds between steps. */
-    simulationSpeed: number;
+    simulationSpeed?: number;
 }
-

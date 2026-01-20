@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Algorithm AI Lab",
   description: "Interactive AI Algorithm Visualizer",
+  icons: {
+    icon: '/icon.gif',
+  },
 };
 
 /**

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useGameStore } from "@/store/gameStore"
 import TreeGraph from "@/components/visualization/TreeGraph"
 import GraphVisualizer from "@/components/visualization/GraphVisualizer"
-import { Play, Pause, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch, X, Sparkles, Maximize, LocateFixed, Gauge } from 'lucide-react'
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, FastForward, Network, GitBranch, X, Sparkles, Maximize, LocateFixed, Gauge, MousePointer2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ParentSize } from '@visx/responsive'
 import { cn } from '@/lib/utils'
@@ -55,7 +55,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
   return (
     <section className="xl:col-span-9 flex flex-col h-full min-h-[500px]">
       <div className="rounded-xl border bg-card text-card-foreground shadow flex flex-col h-full overflow-visible">
-        <div className="p-4 border-b bg-muted/10 flex flex-wrap gap-4 justify-between items-center">
+        <div className="p-4 border-b bg-muted/10 flex flex-wrap gap-4 justify-between items-center relative z-50">
 
           {/* Controls Area */}
           <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                   }}
                   disabled={!algorithm}
                   className={cn(
-                    "p-2 rounded-md transition-all relative",
+                    "p-2 rounded-md transition-all",
                     isSimulating
                       ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20 animate-pulse"
                       : "hover:bg-background text-muted-foreground hover:text-foreground"
@@ -99,22 +99,32 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                   title={isSimulating ? t('stop_sim') : t('start_sim')}
                 >
                   {isSimulating ? <Pause size={18} /> : <Play size={18} />}
-
-                  {/* Right-click notification hint - Now below the button */}
-                  <AnimatePresence>
-                    {showSpeedHint && !isSimulating && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-black py-1 px-3 rounded-lg whitespace-nowrap shadow-2xl border border-white/20 z-[100]"
-                      >
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45" />
-                        {t('speed_hint')}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </button>
+
+                {/* Right-click notification hint - Aligned to the left to prevent clipping */}
+                <AnimatePresence>
+                  {showSpeedHint && !isSimulating && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        scale: [1, 1.05, 1],
+                      }}
+                      transition={{
+                        scale: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        default: { duration: 0.3 }
+                      }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="absolute top-full mt-4 -left-4 bg-amber-600 text-white text-[11px] font-black py-2 px-4 rounded-xl whitespace-nowrap shadow-[0_0_25px_rgba(245,158,11,0.4)] border-2 border-white/40 z-[100] flex items-center gap-2"
+                    >
+                      {/* Arrow positioned over the button */}
+                      <div className="absolute -top-2 left-8 w-4 h-4 bg-amber-600 rotate-45 border-t-2 border-l-2 border-white/40" />
+                      <MousePointer2 size={14} className="animate-bounce" />
+                      {t('stats_tab.speed_hint')}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Speed Selection Menu - Now opens downwards */}
                 <AnimatePresence>
@@ -125,11 +135,11 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        className="absolute top-full left-0 mt-2 z-[100] bg-card/95 backdrop-blur-md border-2 rounded-xl shadow-2xl p-2 min-w-[160px] flex flex-col gap-1 border-primary/20"
+                        className="absolute top-full left-0 mt-2 z-[100] bg-card/95 backdrop-blur-md border-2 rounded-xl shadow-2xl p-2 min-w-[170px] flex flex-col gap-1 border-primary/20"
                       >
                         <div className="px-2 py-1.5 border-b mb-1 flex items-center gap-2 text-muted-foreground">
                           <Gauge size={12} />
-                          <span className="text-[10px] font-black uppercase tracking-tighter">{t('sim_speed')}</span>
+                          <span className="text-[10px] font-black uppercase tracking-tighter">{t('stats_tab.sim_speed')}</span>
                         </div>
                         {[500, 1000, 1500, 2000, 3000].map((speed) => (
                           <button
@@ -139,7 +149,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                               setShowSpeedMenu(false);
                             }}
                             className={cn(
-                              "text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex justify-between items-center",
+                              "text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex justify-between items-center w-full",
                               searchSettings.simulationSpeed === speed
                                 ? "bg-primary text-primary-foreground"
                                 : "hover:bg-muted"
@@ -154,6 +164,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                   )}
                 </AnimatePresence>
               </div>
+
             </div>
 
             <button

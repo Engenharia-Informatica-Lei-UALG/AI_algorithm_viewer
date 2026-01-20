@@ -161,7 +161,7 @@ const resources = {
         "waiting": "(Waiting for simulation)",
         "depth_limit": "Current Iteration (Depth)",
         "f_limit": "Current Iteration (f-Limit)",
-        "speed_hint": "Right-click to change speed!",
+        "speed_hint": "Right-click mouse button to change speed",
         "sim_speed": "Simulation Speed"
       },
       "upload_tab": {
@@ -337,7 +337,7 @@ const resources = {
         "waiting": "(Aguardando simulação)",
         "depth_limit": "Iteração Atual (Prof.)",
         "f_limit": "Iteração Atual (f-Limit)",
-        "speed_hint": "Click direito p/ mudar vel.!",
+        "speed_hint": "Botão direito do mouse para mudar a velocidade",
         "sim_speed": "Velocidade Simulação"
       },
       "upload_tab": {
