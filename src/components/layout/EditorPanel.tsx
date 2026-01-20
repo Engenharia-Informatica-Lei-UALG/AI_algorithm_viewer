@@ -216,8 +216,8 @@ function StatsTabContent() {
   // Prepara as estatísticas para exibição, garantindo que as listas apareçam para algoritmos de busca
   const displayStats = { ...algorithmStats };
   if (isSearchAlgo) {
-    if (!displayStats["Lista Aberta (Frontier)"]) displayStats["Lista Aberta (Frontier)"] = ["(Aguardando simulação)"];
-    if (!displayStats["Lista Fechada (Explored)"]) displayStats["Lista Fechada (Explored)"] = ["(Aguardando simulação)"];
+    if (!displayStats["Lista Aberta (Frontier)"]) displayStats["Lista Aberta (Frontier)"] = [t('stats_tab.waiting')];
+    if (!displayStats["Lista Fechada (Explored)"]) displayStats["Lista Fechada (Explored)"] = [t('stats_tab.waiting')];
   }
 
   return (
@@ -244,15 +244,15 @@ function StatsTabContent() {
           <p className="text-2xl font-mono font-bold">{nodesExplored}</p>
         </div>
         <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Prof. Simulação</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('stats_tab.sim_depth')}</p>
           <p className="text-2xl font-mono font-bold">{depth}</p>
         </div>
         <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Prof. Máxima Real</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('stats_tab.max_real_depth')}</p>
           <p className="text-2xl font-mono font-bold">{treeMetrics.maxDepth}</p>
         </div>
         <div className="p-3 bg-muted/50 rounded-lg border shadow-sm">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total de Filhos</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('stats_tab.total_children')}</p>
           <p className="text-2xl font-mono font-bold">{treeMetrics.totalChildren}</p>
         </div>
       </div>
@@ -260,7 +260,7 @@ function StatsTabContent() {
       {Object.keys(displayStats).length > 0 && (
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
-            <Activity size={16} /> Detalhes da Execução
+            <Activity size={16} /> {t('stats_tab.execution_details')}
           </h4>
           <div className="space-y-2">
             {Object.entries(displayStats).map(([key, value]) => (
@@ -326,9 +326,9 @@ export function EditorPanel() {
         updateTree(targetTree as CustomTreeNode);
       }, 50);
 
-      alert(`Sucesso! Problema do tipo "${detectedType}" carregado.`);
+      alert(t('json_tab.success', { type: detectedType }));
     } catch (e) {
-      alert("Erro ao analisar JSON.");
+      alert(t('json_tab.error'));
     }
   };
 
@@ -336,16 +336,16 @@ export function EditorPanel() {
     <section className="flex flex-col h-full overflow-hidden">
       <Tabs defaultValue="algo">
         <TabsList>
-          <TabsTrigger value="algo">Algorithm</TabsTrigger>
-          <TabsTrigger value="editor">Tree Editor</TabsTrigger>
-          <TabsTrigger value="json">JSON</TabsTrigger>
-          <TabsTrigger value="stats">Stats</TabsTrigger>
-          <TabsTrigger value="upload">Upload</TabsTrigger>
+          <TabsTrigger value="algo">{t('tabs.algo')}</TabsTrigger>
+          <TabsTrigger value="editor">{t('tabs.editor')}</TabsTrigger>
+          <TabsTrigger value="json">{t('tabs.json')}</TabsTrigger>
+          <TabsTrigger value="stats">{t('tabs.stats')}</TabsTrigger>
+          <TabsTrigger value="upload">{t('tabs.upload')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="algo">
           <div className="h-full overflow-y-auto pb-4">
-            <h3 className="font-semibold mb-3">Select Algorithm</h3>
+            <h3 className="font-semibold mb-3">{t('algorithm')}</h3>
             <AlgorithmSelector />
           </div>
         </TabsContent>
@@ -360,32 +360,32 @@ export function EditorPanel() {
           <div className="flex flex-col gap-2 h-full pb-4">
             <div className="flex flex-col gap-2 mb-2">
               <span className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
-                <Sparkles size={10} /> Exemplos Rápidos
+                <Sparkles size={10} /> {t('json_tab.quick_examples')}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tree, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
-                  <TreePine size={12} /> Árvore
+                  <TreePine size={12} /> {t('json_tab.tree')}
                 </button>
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.minimax, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
-                  <GitGraph size={12} /> Minimax
+                  <GitGraph size={12} /> {t('json_tab.minimax')}
                 </button>
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.tictactoe, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
-                  <Gamepad2 size={12} /> TicTacToe
+                  <Gamepad2 size={12} /> {t('json_tab.tictactoe')}
                 </button>
                 <button 
                   onClick={() => setJsonInput(JSON.stringify(JSON_EXAMPLES.puzzle, null, 2))}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-muted hover:bg-accent rounded border text-[10px] font-bold transition-colors"
                 >
-                  <Puzzle size={12} /> 8-Puzzle
+                  <Puzzle size={12} /> {t('json_tab.8puzzle')}
                 </button>
               </div>
             </div>
@@ -393,14 +393,14 @@ export function EditorPanel() {
               value={jsonInput}
               onChange={(e) => setJsonInput(e.target.value)}
               className="flex-1 text-xs font-mono bg-muted p-4 rounded-lg border resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Cole seu JSON de árvore aqui..."
+              placeholder={t('json_tab.placeholder') as string}
             />
             <button
               onClick={handleLoadJson}
               className="flex items-center justify-center gap-2 w-full py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shrink-0"
             >
               <Save size={16} />
-              Carregar JSON
+              {t('json_tab.load_btn')}
             </button>
           </div>
         </TabsContent>

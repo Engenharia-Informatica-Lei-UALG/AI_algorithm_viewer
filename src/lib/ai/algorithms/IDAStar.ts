@@ -43,7 +43,6 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
     const rootState = this.problem.initialState;
     const h = this.problem.getHeuristic(rootState);
     
-    // CORREÇÃO: Passar a heurística real (h), não o threshold
     const rootNode = new NodeImpl<S, A>(
       rootState, 
       null, 
@@ -60,6 +59,7 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
       name: `Start (f-limit ${this.threshold})`,
       children: [],
       boardState: (rootState as any).board,
+      value: h
     };
     this.visualNodeMap.clear();
     this.visualNodeMap.set(rootNode, this.visualRoot);
@@ -80,16 +80,26 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
       }
       this.threshold = this.nextThreshold;
       this.prepareIteration();
+      // Retorna null para criar uma pausa visual entre iterações
       return null;
     }
 
     const node = this.stack.pop()!;
     const f = node.getScore();
 
+    // Atualiza visualmente o nó atual como visitado
+    const visualNode = this.visualNodeMap.get(node);
+    if (visualNode) {
+        visualNode.isVisited = true;
+    }
+
     if (f > this.threshold) {
       this.nextThreshold = Math.min(this.nextThreshold, f);
-      // Retorna null para indicar que este nó não foi expandido nesta iteração (corte)
-      // Ou retorna o nó mas não expande seus filhos
+      // Marca visualmente como podado (cutoff)
+      if (visualNode) {
+          visualNode.isPruned = true;
+          visualNode.pruningTriggeredBy = `f(${f}) > limit(${this.threshold})`;
+      }
       return node; 
     }
 
@@ -133,5 +143,13 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
 
   public getTree(): CustomTreeNode {
     return this.visualRoot!;
+  }
+
+  public getAttributes(): Record<string, string | number | string[]> {
+    return {
+      "Limite f(n) Atual (Threshold)": this.threshold,
+      "Próximo Limite (Next Threshold)": this.nextThreshold === Infinity ? "∞" : this.nextThreshold,
+      "Nós na Pilha": this.stack.length
+    };
   }
 }

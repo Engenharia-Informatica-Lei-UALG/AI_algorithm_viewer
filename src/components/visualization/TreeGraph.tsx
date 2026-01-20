@@ -12,6 +12,7 @@ import { useGameStore } from '@/store/gameStore';
 import { CustomTreeNode, NodeShape } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { TicTacToeBoard, EightPuzzleBoard } from '../game/Boards';
+import { useTranslation } from 'react-i18next';
 
 // --- SUB-COMPONENT: PROBLEM VISUALIZER ---
 
@@ -84,6 +85,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const [selectedTileIndex, setSelectedTileIndex] = useState<number | null>(null);
   const [boardInput, setBoardInput] = useState("");
   const [ticTacToeTool, setTicTacToeTool] = useState<'X' | 'O' | null>('X');
+  const { t } = useTranslation();
 
   const currentNode = useMemo(() => {
     if (!initialNode) return null;
@@ -153,7 +155,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
   const handleRemove = () => {
     if (isRoot) return;
     if (hasChildren) {
-      if (window.confirm(`Este nó possui filhos. Tem certeza que deseja remover o nó "${currentNode.name}" e todos os seus descendentes?`)) {
+      if (window.confirm(t('editor.confirm_delete', { name: currentNode.name }))) {
         removeNode(currentNode.id);
         onClose();
       }
@@ -264,8 +266,8 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         {isEditingBoard ? (
           <div className="p-2 flex flex-col items-center gap-3 bg-muted/30 rounded-md">
             <div className="flex justify-between w-full items-center">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground">{problemType === '8puzzle' ? 'Trocar Peças' : 'Alterar Células'}</span>
-              <button onClick={() => setIsEditingBoard(false)} className="text-xs text-primary hover:underline">Concluir</button>
+              <span className="text-[10px] font-bold uppercase text-muted-foreground">{problemType === '8puzzle' ? t('editor.swap_tiles') : t('editor.change_cells')}</span>
+              <button onClick={() => setIsEditingBoard(false)} className="text-xs text-primary hover:underline">{t('editor.finish')}</button>
             </div>
             {problemType === 'tictactoe' && (
               <div className="flex flex-col items-center gap-3">
@@ -301,7 +303,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
           </div>
         ) : isEditingValue ? (
           <div className="p-2 space-y-2">
-            <label className="text-[10px] uppercase text-muted-foreground font-bold">{mode === 'edge' ? 'Custo da Aresta (g)' : 'Valor da Heurística (h)'}</label>
+            <label className="text-[10px] uppercase text-muted-foreground font-bold">{mode === 'edge' ? t('editor.edit_cost') : t('editor.edit_value')}</label>
             <div className="flex gap-1">
               <input autoFocus type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full bg-background border rounded px-2 py-1 text-sm" onKeyDown={(e) => e.key === 'Enter' && handleSaveValue()} />
               <button onClick={handleSaveValue} className="bg-primary text-primary-foreground p-1 rounded hover:bg-primary/90"><Check size={16} /></button>
@@ -312,28 +314,28 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
             {mode === 'node' && (
               <>
                 <button onClick={handleAddChild} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                  <Plus size={16} className="text-primary" /> <span>Adicionar Filho</span>
+                  <Plus size={16} className="text-primary" /> <span>{t('editor.add_child')}</span>
                 </button>
                 {isGameProblem && (
                   <button onClick={() => setIsEditingBoard(true)} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                    <Grid3X3 size={16} className="text-primary" /> <span>Editar Tabuleiro</span>
+                    <Grid3X3 size={16} className="text-primary" /> <span>{t('editor.edit_board')}</span>
                   </button>
                 )}
                 {problemType === 'custom' && !isAdversarial && (
                   <button onClick={toggleGoal} className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${currentNode.isGoal ? 'bg-green-500/10 text-green-600 hover:bg-green-500/20' : 'hover:bg-accent'}`}>
-                    <Target size={16} className={currentNode.isGoal ? "text-green-600" : "text-primary"} /> <span>{currentNode.isGoal ? 'Remover Objetivo' : 'Marcar como Objetivo'}</span>
+                    <Target size={16} className={currentNode.isGoal ? "text-green-600" : "text-primary"} /> <span>{currentNode.isGoal ? t('editor.remove_goal') : t('editor.mark_goal')}</span>
                   </button>
                 )}
               </>
             )}
             {(problemType === 'custom' || isAdversarial) && (
               <button onClick={() => setIsEditingValue(true)} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                <Edit2 size={16} className="text-primary" /> <span>Editar {mode === 'edge' ? 'Custo' : 'Valor'}</span>
+                <Edit2 size={16} className="text-primary" /> <span>{mode === 'edge' ? t('editor.edit_cost') : t('editor.edit_value')}</span>
               </button>
             )}
             {!isRoot && mode === 'node' && (
               <button onClick={handleRemove} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-md transition-colors">
-                <Trash2 size={16} /> <span>Apagar Nó</span>
+                <Trash2 size={16} /> <span>{t('editor.delete_node')}</span>
               </button>
             )}
           </>
@@ -354,6 +356,7 @@ interface TreeGraphProps {
 
 export default function TreeGraph({ data, width, height, zoomResetTrigger }: TreeGraphProps) {
   const { algorithm, maxNodeShape, minNodeShape, admissibilityViolations, nodeViewMode, problemType, updateNodeAttributes, followActiveNode } = useGameStore();
+  const { t } = useTranslation();
 
   const [selectedNode, setSelectedNode] = useState<CustomTreeNode | null>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -461,7 +464,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       const parentBoard = parentNode.boardState || [1, 2, 3, 4, 5, 6, 7, 8, 0];
       const diffCount = parentBoard.reduce((acc: number, val: number, idx: number) => acc + (val !== newBoard[idx] ? 1 : 0), 0);
       if (diffCount !== 2) {
-        alert("Movimento Inválido! O estado do filho deve ser alcançável com apenas 1 movimento a partir do estado do pai.");
+        alert(t('editor.invalid_move'));
         return;
       }
     }

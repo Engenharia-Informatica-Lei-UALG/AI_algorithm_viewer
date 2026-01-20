@@ -64,6 +64,7 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
         return null;
       }
       this.prepareIteration();
+      // Retornamos null para criar uma pausa visual entre iterações
       return null;
     }
 
@@ -113,5 +114,13 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
 
   public getTree(): CustomTreeNode {
     return this.visualRoot!;
+  }
+
+  public getAttributes(): Record<string, string | number | string[]> {
+    return {
+      "Limite Atual (Depth Limit)": this.currentLimit,
+      "Profundidade Máxima Permitida": this.maxAllowedDepth,
+      "Nós na Pilha": this.stack.length
+    };
   }
 }

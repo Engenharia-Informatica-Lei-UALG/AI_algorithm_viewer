@@ -33,79 +33,6 @@ import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon } from "lucide-react"
 import { EightPuzzleBoard, TicTacToeBoard } from "../game/Boards"
 
-const algorithms = [
-  {
-    id: 'bfs',
-    name: 'Breadth-First Search (BFS)',
-    icon: ArrowRightLeft,
-    description: 'Explora vizinhos nível por nível. Garante o caminho mais curto em grafos não ponderados.',
-    category: 'blind'
-  },
-  {
-    id: 'dfs',
-    name: 'Depth-First Search (DFS)',
-    icon: ArrowDown,
-    description: 'Explora o mais profundo possível antes de retroceder. Baixo consumo de memória.',
-    category: 'blind'
-  },
-  {
-    id: 'ids',
-    name: 'Iterative Deepening (IDS)',
-    icon: Timer,
-    description: 'Combina a completude do BFS com a eficiência de memória do DFS, aumentando o limite iterativamente.',
-    category: 'blind'
-  },
-  {
-    id: 'ucs',
-    name: 'Uniform Cost Search (UCS)',
-    icon: Route,
-    description: 'Explora o nó com menor custo de caminho g(n). Ótimo para grafos ponderados.',
-    category: 'blind'
-  },
-  {
-    id: 'greedy',
-    name: 'Greedy Best-First',
-    icon: Zap,
-    description: 'Explora o nó que parece mais próximo do objetivo baseado apenas na heurística h(n).',
-    category: 'heuristic'
-  },
-  {
-    id: 'astar',
-    name: 'A* Search',
-    icon: Search,
-    description: 'Combina custo real e heurística f(n) = g(n) + h(n). Ótimo e completo.',
-    category: 'heuristic'
-  },
-  {
-    id: 'idastar',
-    name: 'IDA*',
-    icon: Timer,
-    description: 'Versão iterativa do A* que usa limites de f-cost para economizar memória.',
-    category: 'heuristic'
-  },
-  {
-    id: 'minimax',
-    name: 'Minimax',
-    icon: GitGraph,
-    description: 'Para jogos adversariais. Minimiza a perda máxima possível.',
-    category: 'adversarial'
-  },
-  {
-    id: 'alpha-beta',
-    name: 'Alpha-Beta Pruning',
-    icon: Network,
-    description: 'Otimização do Minimax que corta ramos irrelevantes.',
-    category: 'adversarial'
-  },
-  {
-    id: 'mcts',
-    name: 'Monte Carlo Tree Search',
-    icon: BrainCircuit,
-    description: 'Usa simulações aleatórias para estimar o valor dos movimentos.',
-    category: 'adversarial'
-  }
-] as const;
-
 export function AlgorithmSelector() {
   const {
     algorithm,
@@ -134,6 +61,79 @@ export function AlgorithmSelector() {
   const [admissibilityResult, setAdmissibilityResult] = useState<{ isAdmissible: boolean, violations: string[] } | null>(null)
   const [goalInput, setGoalInput] = useState(goalState?.join(' ') || "")
   const { t } = useTranslation()
+
+  const algorithms = [
+    {
+      id: 'bfs',
+      name: t('algo_bfs_name'),
+      icon: ArrowRightLeft,
+      description: t('algo_bfs_desc'),
+      category: 'blind'
+    },
+    {
+      id: 'dfs',
+      name: t('algo_dfs_name'),
+      icon: ArrowDown,
+      description: t('algo_dfs_desc'),
+      category: 'blind'
+    },
+    {
+      id: 'ids',
+      name: t('algo_ids_name'),
+      icon: Timer,
+      description: t('algo_ids_desc'),
+      category: 'blind'
+    },
+    {
+      id: 'ucs',
+      name: t('algo_ucs_name'),
+      icon: Route,
+      description: t('algo_ucs_desc'),
+      category: 'blind'
+    },
+    {
+      id: 'greedy',
+      name: t('algo_greedy_name'),
+      icon: Zap,
+      description: t('algo_greedy_desc'),
+      category: 'heuristic'
+    },
+    {
+      id: 'astar',
+      name: t('algo_astar_name'),
+      icon: Search,
+      description: t('algo_astar_desc'),
+      category: 'heuristic'
+    },
+    {
+      id: 'idastar',
+      name: t('algo_idastar_name'),
+      icon: Timer,
+      description: t('algo_idastar_desc'),
+      category: 'heuristic'
+    },
+    {
+      id: 'minimax',
+      name: t('algo_minimax_name'),
+      icon: GitGraph,
+      description: t('algo_minimax_desc'),
+      category: 'adversarial'
+    },
+    {
+      id: 'alpha-beta',
+      name: t('algo_alphabeta_name'),
+      icon: Network,
+      description: t('algo_alphabeta_desc'),
+      category: 'adversarial'
+    },
+    {
+      id: 'mcts',
+      name: t('algo_mcts_name'),
+      icon: BrainCircuit,
+      description: t('algo_mcts_desc'),
+      category: 'adversarial'
+    }
+  ] as const;
 
   useEffect(() => {
     setIsCollapsed(!!algorithm)
@@ -267,13 +267,13 @@ export function AlgorithmSelector() {
           <div className="space-y-3 pt-2">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <Settings2 size={12} />
-              Tipo de Problema
+              {t('problem_type')}
             </h3>
             <div className={cn("grid gap-2", algorithm === 'mcts' ? "grid-cols-2" : "grid-cols-3")}>
               {[
-                { id: 'custom', name: 'Árvore', icon: TreePine },
-                { id: 'tictactoe', name: 'TicTacToe', icon: Gamepad2 },
-                { id: '8puzzle', name: '8-Puzzle', icon: Puzzle },
+                { id: 'custom', name: t('custom_tree'), icon: TreePine },
+                { id: 'tictactoe', name: t('tictactoe'), icon: Gamepad2 },
+                { id: '8puzzle', name: t('8puzzle'), icon: Puzzle },
               ].filter(t => algorithm !== 'mcts' || t.id !== 'custom').map((type) => (
                 <button
                   key={type.id}
@@ -305,7 +305,7 @@ export function AlgorithmSelector() {
               >
                 <div className="flex items-center gap-2 text-primary">
                   <Target size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Estado Objetivo</h4>
+                  <h4 className="text-xs font-black uppercase tracking-widest">{t('goal_state')}</h4>
                 </div>
                 <EightPuzzleBoard board={goalState || []} size="sm" />
                 <input
@@ -328,7 +328,7 @@ export function AlgorithmSelector() {
               >
                 <div className="flex items-center gap-2 text-primary">
                   <ShieldCheck size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Análise de Heurística</h4>
+                  <h4 className="text-xs font-black uppercase tracking-widest">{t('heuristic_analysis')}</h4>
                 </div>
                 <button
                   onClick={handleCheckAdmissibility}
@@ -339,11 +339,11 @@ export function AlgorithmSelector() {
                         : "bg-primary text-primary-foreground hover:opacity-90"
                   )}
                 >
-                  {admissibilityViolations.length > 0 ? "Limpar Visualização" : "Verificar Admissibilidade"}
+                  {admissibilityViolations.length > 0 ? t('clear_visualization') : t('check_admissibility')}
                 </button>
                 {admissibilityResult && (
                   <div className={cn("p-3 rounded-lg text-xs font-bold border", admissibilityResult.isAdmissible ? "bg-green-500/10 border-green-500/50 text-green-600" : "bg-destructive/10 border-destructive/50 text-destructive")}>
-                    {admissibilityResult.isAdmissible ? "✅ Admissível" : "❌ Não Admissível"}
+                    {admissibilityResult.isAdmissible ? t('admissible') : t('not_admissible')}
                   </div>
                 )}
               </motion.div>
@@ -359,12 +359,12 @@ export function AlgorithmSelector() {
               >
                 <div className="flex items-center gap-2 text-primary">
                   <Users size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Configuração Adversarial</h4>
+                  <h4 className="text-xs font-black uppercase tracking-widest">{t('adversarial_config')}</h4>
                 </div>
 
                 {problemType === 'tictactoe' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase text-muted-foreground">Jogador Maximizador (MAX)</label>
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground">{t('max_player')}</label>
                     <div className="flex bg-muted p-1 rounded-lg border">
                       <button
                         onClick={() => setTicTacToeMaxPlayer('X')}
@@ -387,7 +387,7 @@ export function AlgorithmSelector() {
                 {problemType === 'custom' && (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-muted-foreground">Nós MAX (Jogador)</label>
+                      <label className="text-[10px] font-bold uppercase text-muted-foreground">{t('max_nodes')}</label>
                       <div className="flex gap-2">
                         {(['triangle', 'circle', 'square'] as NodeShape[]).map(shape => (
                           <button
@@ -406,7 +406,7 @@ export function AlgorithmSelector() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-muted-foreground">Nós MIN (Oponente)</label>
+                      <label className="text-[10px] font-bold uppercase text-muted-foreground">{t('min_nodes')}</label>
                       <div className="flex gap-2">
                         {(['triangle', 'circle', 'square'] as NodeShape[]).map(shape => (
                           <button
@@ -438,13 +438,13 @@ export function AlgorithmSelector() {
               >
                 <div className="flex items-center gap-2 text-primary">
                   <Settings2 size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Configuração MCTS</h4>
+                  <h4 className="text-xs font-black uppercase tracking-widest">{t('mcts_config')}</h4>
                 </div>
 
                 <div className="space-y-3">
                    <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Constante de Exploração (C)</label>
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">{t('exploration_constant')}</label>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono font-bold">{searchSettings.mctsExploration.toFixed(2)}</span>
                           <button
@@ -466,7 +466,7 @@ export function AlgorithmSelector() {
                         className="w-full accent-primary cursor-pointer"
                       />
                       <p className="text-[10px] text-muted-foreground leading-tight">
-                        Equilibra exploração (novos caminhos) vs aproveitamento (melhores caminhos). Padrão: ~1.41
+                        {t('mcts_desc')}
                       </p>
                    </div>
                 </div>

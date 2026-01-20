@@ -66,7 +66,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                 onClick={onFastForwardAction}
                 disabled={!algorithm || isSimulating}
                 className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
-                title="Resultado Final"
+                title={t('fast_forward')}
               >
                 <FastForward size={18} />
               </button>
@@ -149,7 +149,7 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
             )}
 
             <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Algoritmo:</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t('algorithm')}:</span>
                 <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
                 {algorithm ? algorithm.toUpperCase() : "---"}
                 </span>

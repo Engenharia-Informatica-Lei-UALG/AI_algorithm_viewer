@@ -7,6 +7,8 @@ import { EightPuzzle } from '@/lib/ai/problems/EightPuzzle';
 import { FrontierSearch } from '@/lib/ai/algorithms/FrontierSearch';
 import { Minimax } from '@/lib/ai/algorithms/Minimax';
 import { MCTS } from '@/lib/ai/algorithms/MCTS';
+import { IDS } from '@/lib/ai/algorithms/IDS';
+import { IDAStar } from '@/lib/ai/algorithms/IDAStar';
 import { SearchAlgorithm, SearchStatus } from '@/lib/ai/core/SearchAlgorithm';
 import { Problem } from '@/lib/ai/core/types';
 
@@ -70,6 +72,8 @@ export function useSimulation() {
       case 'minimax': algoInstance = new Minimax(problem, searchSettings.maxDepth, false); break;
       case 'alpha-beta': algoInstance = new Minimax(problem, searchSettings.maxDepth, true); break;
       case 'mcts': algoInstance = new MCTS(problem, searchSettings.mctsIterations, searchSettings.mctsExploration); break;
+      case 'ids': algoInstance = new IDS(problem, searchSettings.maxDepth); break;
+      case 'idastar': algoInstance = new IDAStar(problem, 5000); break;
       default: console.warn("Algoritmo não implementado:", algorithm);
     }
     searchAlgoRef.current = algoInstance;
@@ -97,8 +101,8 @@ export function useSimulation() {
 
     const node = algo.step();
     if (node) {
-      // Para problemas dinâmicos ou algoritmos que constroem árvores visuais (Minimax, MCTS), atualizamos a árvore visual
-      const isTreeBasedAlgo = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
+      // Para problemas dinâmicos ou algoritmos que constroem árvores visuais (Minimax, MCTS, IDS, IDA*), atualizamos a árvore visual
+      const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm);
       if ((problemType !== 'custom' || isTreeBasedAlgo) && 'getTree' in algo) {
         updateTree((algo as any).getTree(), true);
       }

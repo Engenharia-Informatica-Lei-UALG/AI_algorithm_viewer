@@ -38,13 +38,13 @@ export default function JsonDocsPage() {
 
                     <div className="bg-muted p-6 rounded-xl font-mono text-sm overflow-x-auto border">
                         <pre>{`{
-  "id": "string",          // Identificador único (obrigatório)
-  "name": "string",        // Nome exibido no gráfico
-  "value": 10,             // Valor numérico (Heurística h ou Utilidade)
-  "costToParent": 1,       // Custo da aresta para chegar neste nó (g)
-  "isGoal": false,         // Define se este nó é um estado de objetivo
-  "boardState": [...],     // Estado específico do jogo (opcional)
-  "children": []           // Lista de nós filhos (recursivo)
+  "id": "string",          // ${t('docs.comment_id')}
+  "name": "string",        // ${t('docs.comment_name')}
+  "value": 10,             // ${t('docs.comment_value')}
+  "costToParent": 1,       // ${t('docs.comment_cost')}
+  "isGoal": false,         // ${t('docs.comment_isgoal')}
+  "boardState": [...],     // ${t('docs.comment_boardstate')}
+  "children": []           // ${t('docs.comment_children')}
 }`}</pre>
                     </div>
                 </section>
@@ -75,35 +75,35 @@ export default function JsonDocsPage() {
                 <section className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
                         <BrainCircuit className="text-primary" />
-                        <h2 className="text-2xl font-bold">Propriedades Avançadas e de Simulação</h2>
+                        <h2 className="text-2xl font-bold">{t('docs.advanced_props_title')}</h2>
                     </div>
                     <p className="text-muted-foreground text-sm">
-                        Estas propriedades são geralmente injetadas automaticamente pelos algoritmos durante a simulação, mas podem ser definidas manualmente para fins de visualização estática ou depuração.
+                        {t('docs.advanced_props_desc')}
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 rounded-xl border bg-card">
                             <div className="flex items-center gap-2 mb-2">
                                 <Network size={16} className="text-orange-500" />
-                                <h4 className="font-bold text-sm">Alpha-Beta Pruning</h4>
+                                <h4 className="font-bold text-sm">{t('docs.alphabeta_title')}</h4>
                             </div>
                             <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
-                                <li><code className="text-primary">alpha</code>: Melhor valor para MAX encontrado até agora.</li>
-                                <li><code className="text-primary">beta</code>: Melhor valor para MIN encontrado até agora.</li>
-                                <li><code className="text-primary">isPruned</code>: (bool) Se o nó foi podado.</li>
-                                <li><code className="text-primary">pruningTriggeredBy</code>: (string) ID do nó que causou o corte.</li>
+                                <li><code className="text-primary">alpha</code>: {t('docs.alphabeta_alpha')}</li>
+                                <li><code className="text-primary">beta</code>: {t('docs.alphabeta_beta')}</li>
+                                <li><code className="text-primary">isPruned</code>: {t('docs.alphabeta_ispruned')}</li>
+                                <li><code className="text-primary">pruningTriggeredBy</code>: {t('docs.alphabeta_trigger')}</li>
                             </ul>
                         </div>
 
                         <div className="p-4 rounded-xl border bg-card">
                             <div className="flex items-center gap-2 mb-2">
                                 <Eye size={16} className="text-blue-500" />
-                                <h4 className="font-bold text-sm">Estado Visual</h4>
+                                <h4 className="font-bold text-sm">{t('docs.visual_state_title')}</h4>
                             </div>
                             <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
-                                <li><code className="text-primary">isVisited</code>: (bool) Se o algoritmo visitou este nó.</li>
-                                <li><code className="text-primary">isCurrent</code>: (bool) Se é o nó ativo na iteração atual.</li>
-                                <li><code className="text-primary">isCutoffPoint</code>: (bool) Se a busca parou aqui (profundidade).</li>
+                                <li><code className="text-primary">isVisited</code>: {t('docs.visual_isvisited')}</li>
+                                <li><code className="text-primary">isCurrent</code>: {t('docs.visual_iscurrent')}</li>
+                                <li><code className="text-primary">isCutoffPoint</code>: {t('docs.visual_iscutoff')}</li>
                             </ul>
                         </div>
                     </div>
@@ -123,7 +123,7 @@ export default function JsonDocsPage() {
                                 <h4 className="font-bold">8-Puzzle</h4>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">
-                                O <code className="text-primary">boardState</code> deve ser um array de 9 números contendo de 0 a 8. O 0 representa o espaço vazio.
+                                {t('docs.puzzle8_desc')}
                             </p>
                             <div className="bg-muted p-3 rounded-lg font-mono text-xs">
                                 "boardState": [1, 2, 3, 4, 8, 0, 7, 6, 5]
@@ -136,7 +136,7 @@ export default function JsonDocsPage() {
                                 <h4 className="font-bold">Tic-Tac-Toe</h4>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">
-                                O <code className="text-primary">boardState</code> deve ser um array de 9 strings contendo "X", "O" ou null.
+                                {t('docs.tictactoe_desc')}
                             </p>
                             <div className="bg-muted p-3 rounded-lg font-mono text-xs">
                                 "boardState": ["X", "O", null, "X", null, null, "O", null, null]
