@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Code2, FileJson, Parentheses, TreePine, Gamepad2, Puzzle } from "lucide-react"
+import { ArrowLeft, Code2, FileJson, Parentheses, TreePine, Gamepad2, Puzzle, Network, BrainCircuit, Eye } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 export default function JsonDocsPage() {
@@ -68,6 +68,44 @@ export default function JsonDocsPage() {
                         <p className="text-sm text-muted-foreground">
                             {t('docs.values_desc')}
                         </p>
+                    </div>
+                </section>
+
+                {/* Advanced Properties */}
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 border-b pb-2">
+                        <BrainCircuit className="text-primary" />
+                        <h2 className="text-2xl font-bold">Propriedades Avançadas e de Simulação</h2>
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                        Estas propriedades são geralmente injetadas automaticamente pelos algoritmos durante a simulação, mas podem ser definidas manualmente para fins de visualização estática ou depuração.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl border bg-card">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Network size={16} className="text-orange-500" />
+                                <h4 className="font-bold text-sm">Alpha-Beta Pruning</h4>
+                            </div>
+                            <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                <li><code className="text-primary">alpha</code>: Melhor valor para MAX encontrado até agora.</li>
+                                <li><code className="text-primary">beta</code>: Melhor valor para MIN encontrado até agora.</li>
+                                <li><code className="text-primary">isPruned</code>: (bool) Se o nó foi podado.</li>
+                                <li><code className="text-primary">pruningTriggeredBy</code>: (string) ID do nó que causou o corte.</li>
+                            </ul>
+                        </div>
+
+                        <div className="p-4 rounded-xl border bg-card">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Eye size={16} className="text-blue-500" />
+                                <h4 className="font-bold text-sm">Estado Visual</h4>
+                            </div>
+                            <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                <li><code className="text-primary">isVisited</code>: (bool) Se o algoritmo visitou este nó.</li>
+                                <li><code className="text-primary">isCurrent</code>: (bool) Se é o nó ativo na iteração atual.</li>
+                                <li><code className="text-primary">isCutoffPoint</code>: (bool) Se a busca parou aqui (profundidade).</li>
+                            </ul>
+                        </div>
                     </div>
                 </section>
 

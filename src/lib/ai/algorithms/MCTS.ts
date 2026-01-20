@@ -7,6 +7,7 @@ class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
   public value: number = 0;
   public children: MCTSNode<S, A>[] = [];
   public untriedActions: A[];
+  public id: string; // ID único para o nó MCTS
 
   constructor(
     public state: S,
@@ -15,9 +16,11 @@ class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
     public pathCost: number,
     public heuristic: number,
     public depth: number,
-    problem: Problem<S, A>
+    problem: Problem<S, A>,
+    id: string
   ) {
     this.untriedActions = problem.getActions(state);
+    this.id = id;
   }
 
   getScore() { return this.value / (this.visits || 1); }
@@ -31,6 +34,7 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   private root: MCTSNode<S, A> | null = null;
   private iterations: number;
   private cParam: number;
+  private nodeCounter: number = 0; // Contador global para IDs únicos
 
   constructor(problem: Problem<S, A>, iterations: number = 1000, cParam: number = 1.414) {
     super(problem);
@@ -40,6 +44,7 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   }
 
   protected initialize(): void {
+    this.nodeCounter = 0;
     this.root = new MCTSNode(
       this.problem.initialState,
       null,
@@ -47,7 +52,8 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
       0,
       0,
       0,
-      this.problem
+      this.problem,
+      `mcts-root-${this.nodeCounter++}`
     );
   }
 
@@ -74,7 +80,8 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
         0,
         0,
         node.depth + 1,
-        this.problem
+        this.problem,
+        `mcts-node-${this.nodeCounter++}`
       );
       node.children.push(child);
       node = child;
@@ -130,24 +137,20 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   }
 
   public getTree(): CustomTreeNode {
-    const convert = (node: MCTSNode<S, A>, fallbackId: string): CustomTreeNode => {
-      const stateAny = node.state as any;
-      // Prefer the actual node ID from the problem state if available, to match the visualization history
-      const actualId = stateAny.nodeId || stateAny.key || fallbackId;
-
+    const convert = (node: MCTSNode<S, A>): CustomTreeNode => {
+      // Usamos o ID único gerado pelo MCTS para a visualização da árvore
+      // Isso garante que mesmo estados repetidos (transposições) tenham nós visuais distintos na árvore
       return {
-        id: actualId,
+        id: node.id,
         name: node.action ? node.action.name : 'Start',
         value: node.getScore(),
-        boardState: (node.state as any).board,
-        children: node.children.map((child, i) =>
-          convert(child, `${actualId}-${i}`)
-        ),
+        boardState: (node.state as any).board || (node.state as any).boardState,
+        children: node.children.map(child => convert(child)),
         visits: node.visits // Opcional: para mostrar no tooltip
       } as any;
     };
 
-    return convert(this.root!, 'root');
+    return convert(this.root!);
   }
 
   public getAttributes(): Record<string, string | number | string[]> {
