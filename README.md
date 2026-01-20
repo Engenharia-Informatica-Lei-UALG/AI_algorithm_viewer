@@ -19,11 +19,12 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 - **Simulação Passo a Passo:** 
   - Controle total sobre a execução do algoritmo (Avançar, Voltar, Fast Forward).
   - Destaque visual do nó atual e do histórico de exploração.
+  - **Foco Automático:** Acompanhamento automático do nó ativo durante a simulação.
 - **Algoritmos Suportados:**
   - Busca Cega: BFS, DFS, UCS, IDS.
   - Busca Informada: A*, Greedy Search, IDA*.
   - Jogos/Adversários: Minimax, Alpha-Beta Pruning, MCTS.
-- **Análise de Heurística:** Verificação de admissibilidade em tempo real para problemas customizados.
+- **Análise de Heurística:** Verificação de admissibilidade em tempo real para problemas customizados, com destaque visual de violações.
 - **Internacionalização (i18n):** Suporte completo para Inglês (EN) e Português (PT).
 
 ## 🏗️ Arquitetura e Modularidade
