@@ -111,5 +111,20 @@ Desenvolvido por **Brandon Mejia**.
 - **GitHub:** [@kanekitakitos](https://github.com/kanekitakitos)
 - **Instagram:** [@brandonmejia4](https://www.instagram.com/brandonmejia4/)
 
+## 📜 Licença
+
+Este projeto está licenciado sob a **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)**.
+
+Sinta-se à vontade para:
+- **Compartilhar:** Copiar e redistribuir o material em qualquer suporte ou formato.
+- **Adaptar:** Remixar, transformar e criar a partir do material.
+
+Sob as seguintes condições:
+- **Atribuição:** Você deve dar o crédito apropriado e indicar se foram feitas alterações.
+- **Não Comercial:** Você não pode usar o material para fins comerciais.
+- **Compartilhamento pela mesma Licença:** Se você adaptar o material, deve distribuir suas contribuições sob a mesma licença que o original.
+
+Para mais detalhes, consulte o arquivo [LICENSE](LICENSE).
+
 ---
-© 2026 Algorithm AI Labs
+© 2026 Algorithm AI Labs - Todos os direitos reservados.
