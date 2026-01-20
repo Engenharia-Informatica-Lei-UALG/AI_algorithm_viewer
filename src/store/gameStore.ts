@@ -258,6 +258,8 @@ export const useGameStore = create<GameState>()((set) => ({
         const cost = child.costToParent ?? 1; // Assume custo 1 se não definido, para evitar falsos positivos
 
         // Violação se a heurística do pai for maior que o custo real + heurística do filho
+        // h(n) <= c(n, n') + h(n')
+        // Violação: h(n) > c(n, n') + h(n')
         if (hCurrent > cost + hChild) {
           if (!violations.includes(node.id)) {
             violations.push(node.id);
