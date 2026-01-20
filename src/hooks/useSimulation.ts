@@ -102,7 +102,7 @@ export function useSimulation() {
     const node = algo.step();
     if (node) {
       // Para problemas dinâmicos ou algoritmos que constroem árvores visuais (Minimax, MCTS, IDS, IDA*), atualizamos a árvore visual
-      const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm);
+      const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm as string);
       if ((problemType !== 'custom' || isTreeBasedAlgo) && 'getTree' in algo) {
         updateTree((algo as any).getTree(), true);
       }
