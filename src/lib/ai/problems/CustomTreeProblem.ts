@@ -13,9 +13,11 @@ export interface CustomTreeAction extends Action {
 
 export class CustomTreeProblem implements Problem<CustomTreeState, CustomTreeAction> {
   public initialState: CustomTreeState;
+  public rootNode: CustomTreeNode; // Exposto para algoritmos visualizarem a árvore original
   private nodeMap: Map<string, CustomTreeNode>;
 
   constructor(rootNode: CustomTreeNode) {
+    this.rootNode = rootNode;
     this.nodeMap = new Map();
     this.indexNodes(rootNode);
 

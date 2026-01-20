@@ -21,7 +21,7 @@ class MCTSNode<S extends State, A extends Action> implements SearchNode<S, A> {
   }
 
   getScore() { return this.value / (this.visits || 1); }
-  
+
   isFullyExpanded(): boolean {
     return this.untriedActions.length === 0;
   }
@@ -90,7 +90,7 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
       currentState = this.problem.getResult(currentState, randomAction);
       depth++;
     }
-    
+
     // Assumindo jogo de soma zero [-1, 1] ou [0, 1]
     // Precisamos de uma função de utilidade no problema
     const result = this.problem.getUtility ? this.problem.getUtility(currentState, 0) : 0;
@@ -108,28 +108,40 @@ export class MCTS<S extends State, A extends Action> extends SearchAlgorithm<S, 
   }
 
   private selectBestChild(node: MCTSNode<S, A>): MCTSNode<S, A> {
-    const isMaxPlayer = (node.state as any).playerTurn === ((this.problem as any).maxPlayer || 'X');
-    
+    const stateAny = node.state as any;
+    let isMaxPlayer = true;
+    if (stateAny.playerTurn !== undefined) {
+      const maxPlayer = (this.problem as any).maxPlayer || 'X';
+      isMaxPlayer = stateAny.playerTurn === maxPlayer;
+    } else {
+      // Fallback for custom trees: assume alternation starting with Max at depth 0
+      isMaxPlayer = node.depth % 2 === 0;
+    }
+
     const getUCB1 = (n: MCTSNode<S, A>) => {
       const exploitation = n.value / n.visits;
       const exploration = this.cParam * Math.sqrt(Math.log(node.visits) / n.visits);
       return isMaxPlayer ? exploitation + exploration : -exploitation + exploration;
     };
 
-    return node.children.reduce((best, child) => 
+    return node.children.reduce((best, child) =>
       getUCB1(child) > getUCB1(best) ? child : best
     );
   }
 
   public getTree(): CustomTreeNode {
-    const convert = (node: MCTSNode<S, A>, id: string): CustomTreeNode => {
+    const convert = (node: MCTSNode<S, A>, fallbackId: string): CustomTreeNode => {
+      const stateAny = node.state as any;
+      // Prefer the actual node ID from the problem state if available, to match the visualization history
+      const actualId = stateAny.nodeId || stateAny.key || fallbackId;
+
       return {
-        id,
+        id: actualId,
         name: node.action ? node.action.name : 'Start',
         value: node.getScore(),
         boardState: (node.state as any).board,
-        children: node.children.map((child, i) => 
-          convert(child, `${id}-${i}`)
+        children: node.children.map((child, i) =>
+          convert(child, `${actualId}-${i}`)
         ),
         visits: node.visits // Opcional: para mostrar no tooltip
       } as any;

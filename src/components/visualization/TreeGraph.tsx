@@ -170,7 +170,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
     const n = (currentNode as any).visits || 0; // Visitas do nó
     const v = currentNode.value || 0;  // Valor médio (Q/n) já calculado pelo algoritmo
     const C = searchSettings.mctsExploration;
-    
+
     // Evita divisão por zero e logs inválidos
     const explorationTerm = (n > 0 && N > 0) ? C * Math.sqrt(Math.log(N) / n) : 0;
     const ucbScore = v + explorationTerm; // Simplificado (assume Max player para visualização)
@@ -202,13 +202,13 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
         </div>
 
         {/* SEÇÃO DE ESPECIFICAÇÕES ALPHA-BETA */}
-        {showAlphaBeta && mode === 'node' && (
+        {algorithm === 'alpha-beta' && mode === 'node' && (
           <div className="p-2 bg-orange-500/5 rounded-md border border-orange-500/10 mb-1 space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-orange-600">
               <Zap size={12} /> Especificações Alpha-Beta
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-               <div className="bg-background p-1.5 rounded border flex flex-col">
+              <div className="bg-background p-1.5 rounded border flex flex-col">
                 <span className="text-[9px] text-muted-foreground uppercase font-bold">Alpha (α)</span>
                 <span className="font-mono font-bold text-blue-600">{currentNode.alpha === -Infinity ? '-∞' : currentNode.alpha}</span>
               </div>
@@ -226,7 +226,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
               <Calculator size={12} /> Especificações MCTS
             </div>
-            
+
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-background p-1.5 rounded border flex flex-col">
                 <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
@@ -252,7 +252,7 @@ export function NodeActionMenu({ node: initialNode, position, onClose, mode = 'n
                 </div>
               </div>
             </div>
-            
+
             {parentNode && (
               <div className="text-[9px] text-muted-foreground text-center border-t border-primary/10 pt-1">
                 Visitas do Pai (N): <span className="font-mono font-bold">{mctsStats.N}</span>
@@ -379,7 +379,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     if (zoomRef.current && width > 0 && height > 0) {
       // Lógica de centralização inteligente
       const rootX = treeWidth / 2;
-      
+
       // Calculamos o deslocamento exato (tx, ty) para que o centro da árvore
       // coincida com o centro do componente visual.
       // Compensamos o offset de 50px aplicado no <Group top={50} left={50}>
@@ -402,11 +402,21 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
   // Lógica para seguir o nó ativo
   useEffect(() => {
     if (followActiveNode && zoomRef.current && width > 0 && height > 0) {
-      const activeNode = layoutRoot.descendants().find(d => (d.data as any).isCurrent);
+      const activeNode = layoutRoot.descendants().find(d => {
+        const nodeData = d.data as any;
+        return nodeData.isCurrent;
+      });
+
       if (activeNode) {
-        // translateTo centraliza o ponto (x, y) no viewport. 
+        // Centra o nó ativo. 
         // Somamos 50 devido ao offset do <Group top={50} left={50}>
-        zoomRef.current.translateTo({ x: activeNode.x + 50, y: activeNode.y + 50 });
+        // Usamos scale atual para manter a consistência do zoom
+        const currentMatrix = zoomRef.current.transformMatrix;
+
+        zoomRef.current.translateTo({
+          x: activeNode.x + 50,
+          y: activeNode.y + 50
+        });
       }
     }
   }, [layoutRoot, followActiveNode, width, height]);
@@ -483,7 +493,21 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
               <ProblemVisualizer problemType={problemType} node={nodeData} size="xs" interactive={problemType === '8puzzle'} onEightPuzzleMove={(idx) => handle8PuzzleMove(node, idx)} />
             </div>
           </foreignObject>
-          {isPruned && <text y={10} textAnchor="middle" fontSize={40} fill="red" fontWeight="bold" style={{ pointerEvents: 'none' }}>✕</text>}
+          {isPruned && (
+            <motion.text
+              y={10}
+              textAnchor="middle"
+              fontSize={40}
+              fill="red"
+              fontWeight="bold"
+              style={{ pointerEvents: 'none' }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              ✕
+            </motion.text>
+          )}
           {isRepeated && !isPruned && <Group x={boardSize / 2 - 10} y={-boardSize / 2 + 10}><circle r={12} fill="orange" /><Repeat size={14} color="white" x={-7} y={-7} /></Group>}
         </Group>
       );
@@ -502,18 +526,41 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
       fill: "currentColor", stroke: "currentColor", strokeDasharray: isPruned ? "5,5" : (isRepeated ? "2,2" : "none")
     };
 
-    if (shape === 'triangle') return <motion.polygon points="-30,20 30,20 0,-32" {...commonProps} />;
-    if (shape === 'square') return <motion.rect x={-26} y={-26} width={52} height={52} rx={4} {...commonProps} />;
-    return <motion.circle r={28} {...commonProps} />;
+    if (shape === 'triangle') return (
+      <Group>
+        <motion.polygon points="-30,20 30,20 0,-32" {...commonProps} />
+        {isPruned && (
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+        )}
+      </Group>
+    );
+
+    if (shape === 'square') return (
+      <Group>
+        <motion.rect x={-26} y={-26} width={52} height={52} rx={4} {...commonProps} />
+        {isPruned && (
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+        )}
+      </Group>
+    );
+
+    return (
+      <Group>
+        <motion.circle r={28} {...commonProps} />
+        {isPruned && (
+          <motion.text y={10} textAnchor="middle" fontSize={40} fill="#ef4444" fontWeight="bold" style={{ pointerEvents: 'none' }} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>✕</motion.text>
+        )}
+      </Group>
+    );
   };
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-background rounded-xl border-2 border-border shadow-inner transition-colors duration-300">
       <Zoom width={width} height={height} scaleXMin={1 / 4} scaleXMax={4} scaleYMin={1 / 4} scaleYMax={4}>
         {(zoom) => (
-          <div className="relative w-full h-full overflow-hidden" ref={(node) => { 
+          <div className="relative w-full h-full overflow-hidden" ref={(node) => {
             if (zoom.containerRef) (zoom.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            zoomRef.current = zoom; 
+            zoomRef.current = zoom;
           }} style={{ touchAction: 'none' }}>
             <svg width={width} height={height} className={cn("w-full h-full", zoom.isDragging ? "cursor-grabbing" : "cursor-grab")} onClick={() => setSelectedNode(null)}>
               <defs>
@@ -523,110 +570,119 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
               <rect width={width} height={height} fill="url(#grid)" />
               <Group transform={zoom.toString()}>
                 <Group top={50} left={50}>
-                      {layoutRoot.links().map((link, i) => {
-                        const targetData = link.target.data as CustomTreeNode;
-                        const cost = targetData.costToParent;
-                        const isPruned = targetData.isPruned;
-                        return (
-                          <Group key={`link-group-${i}`} opacity={isPruned ? 0.3 : 1}>
-                            <LinkVertical data={link} stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={isPruned ? "5,5" : "none"} className="text-muted-foreground/30" />
-                            {/* Visualização de Corte (Linhas Vermelhas) */}
-                            {isPruned && (
-                              <Group top={(link.source.y + link.target.y) / 2} left={(link.source.x + link.target.x) / 2}>
-                                <line x1={-8} y1={-8} x2={8} y2={8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
-                                <line x1={-8} y1={8} x2={8} y2={-8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
-                              </Group>
-                            )}
-                            {cost !== undefined && (
-                              <Group className="cursor-pointer" onClick={(e) => handleEdgeClick(e, targetData)}>
-                                <rect x={(link.source.x + link.target.x) / 2 - 14} y={(link.source.y + link.target.y) / 2 - 14} width={28} height={28} rx={14} fill="currentColor" className="text-muted hover:text-accent transition-colors border border-border" />
-                                <text x={(link.source.x + link.target.x) / 2} y={(link.source.y + link.target.y) / 2} dy=".33em" fontSize={11} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-muted-foreground select-none pointer-events-none">{cost}</text>
-                              </Group>
-                            )}
-                          </Group>
-                        );
-                      })}
-                      {layoutRoot.descendants().map((node, i) => {
-                        const nodeData = node.data as CustomTreeNode & { isCurrent?: boolean };
-                        const isSelected = selectedNode?.id === nodeData.id && menuMode === 'node';
-                        const isVisited = nodeData.isVisited, isGoal = nodeData.isGoal, isCurrent = nodeData.isCurrent, isPruned = nodeData.isPruned, isRepeated = isRepeatedNode(node);
-                        return (
-                          <Group key={`node-${i}`} top={node.y} left={node.x} onClick={(e) => handleNodeClick(e, nodeData)} className="cursor-pointer" filter={isPruned ? undefined : "url(#shadow)"}>
-                            {isGoal && !isPruned && <motion.circle r={36} fill="none" stroke="#22c55e" strokeWidth={3} strokeDasharray="4 4" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, rotate: 360 }} transition={{ rotate: { duration: 10, repeat: Infinity, ease: "linear" }, default: { duration: 0.3 } }} />}
-                            
-                            {isCurrent && (
-                              isGameMode ? (
-                                <motion.rect
-                                  x={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
-                                  y={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
-                                  width={(problemType === 'tictactoe' ? 120 : 100) + 8}
-                                  height={(problemType === 'tictactoe' ? 120 : 100) + 8}
-                                  rx={12}
-                                  fill="none"
-                                  stroke="#a855f7"
-                                  strokeWidth={4}
-                                  initial={{ scale: 0.95, opacity: 0 }}
-                                  animate={{ scale: [1, 1.05, 1], opacity: [0.5, 1, 0.5] }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                />
-                              ) : (
-                                <motion.circle
-                                  r={34}
-                                  fill="none"
-                                  stroke="#a855f7"
-                                  strokeWidth={4}
-                                  initial={{ scale: 0.8, opacity: 0 }}
-                                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                />
-                              )
-                            )}
-
-                            {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
-                            
-                            {/* Nome do Nó */}
-                            <text
-                              dy={isGameMode ? (problemType === 'tictactoe' ? -75 : -65) : ".33em"}
-                              fontSize={isGameMode ? 10 : 11}
-                              fontWeight="bold"
-                              textAnchor="middle"
-                              style={{ pointerEvents: 'none' }}
-                              fill="currentColor"
-                              className={cn(
-                                isGameMode ? "text-muted-foreground" : (isCurrent || isGoal || admissibilityViolations.includes(nodeData.id) ? "text-white" : "text-foreground"),
-                                isPruned && "opacity-30"
-                              )}
+                  {layoutRoot.links().map((link) => {
+                    const targetData = link.target.data as CustomTreeNode;
+                    const sourceData = link.source.data as CustomTreeNode;
+                    const cost = targetData.costToParent;
+                    const isPruned = targetData.isPruned;
+                    return (
+                      <Group key={`link-${sourceData.id}-${targetData.id}`} opacity={isPruned ? 0.3 : 1}>
+                        <LinkVertical data={link} stroke="currentColor" strokeWidth="2.5" fill="none" strokeDasharray={isPruned ? "5,5" : "none"} className="text-muted-foreground/30" />
+                        {/* Visualização de Corte (Linhas Vermelhas) */}
+                        {isPruned && (
+                          <Group top={(link.source.y + link.target.y) / 2} left={(link.source.x + link.target.x) / 2}>
+                            <motion.g
+                              initial={{ scale: 0, rotate: -45 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                             >
-                              {nodeData.name}
-                            </text>
-                            
-                            {/* Visualização Padrão de Heurística */}
-                            {showHeuristic && !isMCTS && nodeData.value !== undefined && !isPruned && (
-                              <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
-                                <rect x={-18} y={-12} width={36} height={20} rx={10} fill="currentColor" className="text-foreground" />
-                                <text dy=".33em" fontSize={10} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-background">{nodeViewMode === 'game' ? 'v' : 'h'}:{nodeData.value}</text>
-                              </Group>
-                            )}
-
-                            {/* Visualização Específica MCTS (Q/N) */}
-                            {isMCTS && !isPruned && (
-                              <Group y={nodeViewMode === 'game' ? 85 : 40} x={0}>
-                                <rect x={-25} y={-12} width={50} height={20} rx={10} fill="currentColor" className="text-foreground" />
-                                <text dy=".33em" fontSize={9} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-background">
-                                  {nodeData.value?.toFixed(1)} / {(nodeData as any).visits || 0}
-                                </text>
-                              </Group>
-                            )}
-                            {showAlphaBeta && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
-                              <Group y={nodeViewMode === 'game' ? -85 : -50} x={0}>
-                                <rect x={-35} y={-10} width={70} height={20} rx={4} fill="currentColor" className="text-muted/90 border border-border" />
-                                <text dy=".33em" fontSize={9} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-foreground">α:{nodeData.alpha === -Infinity ? '-∞' : nodeData.alpha} β:{nodeData.beta === Infinity ? '∞' : nodeData.beta}</text>
-                              </Group>
-                            )}
+                              <line x1={-8} y1={-8} x2={8} y2={8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+                              <line x1={-8} y1={8} x2={8} y2={-8} stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+                            </motion.g>
                           </Group>
-                        );
-                      })}
-                    </Group>
+                        )}
+                        {cost !== undefined && (
+                          <Group className="cursor-pointer" onClick={(e) => handleEdgeClick(e, targetData)}>
+                            <rect x={(link.source.x + link.target.x) / 2 - 14} y={(link.source.y + link.target.y) / 2 - 14} width={28} height={28} rx={14} fill="currentColor" className="text-muted hover:text-accent transition-colors border border-border" />
+                            <text x={(link.source.x + link.target.x) / 2} y={(link.source.y + link.target.y) / 2} dy=".33em" fontSize={11} fontWeight="bold" textAnchor="middle" fill="currentColor" className="text-muted-foreground select-none pointer-events-none">{cost}</text>
+                          </Group>
+                        )}
+                      </Group>
+                    );
+                  })}
+                  {layoutRoot.descendants().map((node) => {
+                    const nodeData = node.data as CustomTreeNode & { isCurrent?: boolean };
+                    const isSelected = selectedNode?.id === nodeData.id && menuMode === 'node';
+                    const isVisited = nodeData.isVisited, isGoal = nodeData.isGoal, isCurrent = nodeData.isCurrent, isPruned = nodeData.isPruned, isRepeated = isRepeatedNode(node);
+                    return (
+                      <Group key={nodeData.id} top={node.y} left={node.x} onClick={(e) => handleNodeClick(e, nodeData)} className="cursor-pointer" filter={isPruned ? undefined : "url(#shadow)"}>
+                        {isGoal && !isPruned && <motion.circle r={36} fill="none" stroke="#22c55e" strokeWidth={3} strokeDasharray="4 4" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, rotate: 360 }} transition={{ rotate: { duration: 10, repeat: Infinity, ease: "linear" }, default: { duration: 0.3 } }} />}
+
+                        {isCurrent && (
+                          isGameMode ? (
+                            <motion.rect
+                              x={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
+                              y={-(problemType === 'tictactoe' ? 120 : 100) / 2 - 4}
+                              width={(problemType === 'tictactoe' ? 120 : 100) + 8}
+                              height={(problemType === 'tictactoe' ? 120 : 100) + 8}
+                              rx={12}
+                              fill="none"
+                              stroke="#a855f7"
+                              strokeWidth={4}
+                              initial={{ scale: 0.95, opacity: 0 }}
+                              animate={{ scale: [1, 1.05, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            />
+                          ) : (
+                            <motion.circle
+                              r={34}
+                              fill="none"
+                              stroke="#a855f7"
+                              strokeWidth={4}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            />
+                          )
+                        )}
+
+                        {renderNodeShape(node, !!isSelected, !!isVisited, !!isGoal, !!isCurrent, !!isPruned, isRepeated)}
+
+                        {/* Nome do Nó */}
+                        <text
+                          dy={isGameMode ? (problemType === 'tictactoe' ? -75 : -65) : ".33em"}
+                          fontSize={isGameMode ? 10 : 11}
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          style={{ pointerEvents: 'none' }}
+                          fill="currentColor"
+                          className={cn(
+                            isGameMode ? "text-muted-foreground" : (isCurrent || isGoal || admissibilityViolations.includes(nodeData.id) ? "text-white" : "text-foreground"),
+                            isPruned && "opacity-30"
+                          )}
+                        >
+                          {nodeData.name}
+                        </text>
+
+                        {/* Visualização de Valor/Heurística */}
+                        {((showHeuristic && !isMCTS) || showAlphaBeta) && nodeData.value !== undefined && !isPruned && (
+                          <Group top={nodeViewMode === 'game' ? 85 : 45} left={0}>
+                            <rect x={-25} y={-12} width={50} height={24} rx={12} fill="currentColor" className="text-slate-800 shadow-xl" />
+                            <text dy=".33em" fontSize={12} fontWeight="900" textAnchor="middle" fill="currentColor" className="text-white">
+                              v:{nodeData.value === Infinity ? '∞' : nodeData.value === -Infinity ? '-∞' : nodeData.value}
+                            </text>
+                          </Group>
+                        )}
+
+                        {/* Visualização de Alpha-Beta (Superior) */}
+                        {algorithm === 'alpha-beta' && !isPruned && (nodeData.alpha !== undefined || nodeData.beta !== undefined) && (
+                          <Group top={nodeViewMode === 'game' ? -120 : -80} left={0}>
+                            <motion.g
+                              initial={false}
+                              animate={{ scale: [1, 1.1, 1] }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <rect x={-65} y={-18} width={130} height={36} rx={8} fill="currentColor" className="text-slate-900 border-2 border-primary shadow-2xl" />
+                              <text dy=".33em" fontSize={15} fontWeight="900" textAnchor="middle" fill="currentColor" className="text-white">
+                                α:{nodeData.alpha === -Infinity || nodeData.alpha === null ? '-∞' : nodeData.alpha} β:{nodeData.beta === Infinity || nodeData.beta === null ? '∞' : nodeData.beta}
+                              </text>
+                            </motion.g>
+                          </Group>
+                        )}
+                      </Group>
+                    );
+                  })}
+                </Group>
               </Group>
             </svg>
           </div>

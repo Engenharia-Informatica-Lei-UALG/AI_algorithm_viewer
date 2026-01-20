@@ -60,7 +60,7 @@ interface GameState {
 
   setAlgorithmStats: (stats: Record<string, any>) => void
   // Ações de Edição da Árvore
-  updateTree: (newTree: CustomTreeNode) => void
+  updateTree: (newTree: CustomTreeNode, isSimulationUpdate?: boolean) => void
   addNode: (parentId: string, node: CustomTreeNode) => void
   removeNode: (nodeId: string) => void
   updateNodeAttributes: (nodeId: string, attributes: Partial<CustomTreeNode>) => void
@@ -174,13 +174,28 @@ export const useGameStore = create<GameState>()((set) => ({
   toggleSimulation: () => set((state) => ({ isSimulating: !state.isSimulating })),
 
   reset: () => set((state) => {
-    // Se for um jogo, limpamos os filhos da árvore para voltar ao estado inicial do tabuleiro
-    const cleanedTree = (state.problemType === 'tictactoe' || state.problemType === '8puzzle')
-      ? { ...state.tree, children: [], value: undefined }
-      : state.tree;
+    const clearSimulationFields = (node: CustomTreeNode): CustomTreeNode => {
+      const newNode = { ...node };
+      delete newNode.isVisited;
+      delete newNode.alpha;
+      delete newNode.beta;
+      delete newNode.isPruned;
+      delete newNode.isCutoffPoint;
+      delete newNode.pruningTriggeredBy;
+
+      // Se for um jogo, mantemos apenas a raiz e limpamos filhos
+      // Se for custom, mantemos a estrutura mas limpamos os campos acima
+      if (state.problemType === 'tictactoe' || state.problemType === '8puzzle') {
+        newNode.children = [];
+        delete newNode.value;
+      } else {
+        newNode.children = node.children.map(clearSimulationFields);
+      }
+      return newNode;
+    };
 
     return {
-      tree: cleanedTree,
+      tree: clearSimulationFields(state.tree),
       depth: 0,
       nodesExplored: 0,
       isSimulating: false,
@@ -229,7 +244,7 @@ export const useGameStore = create<GameState>()((set) => ({
     const violations: string[] = [];
     const checkRecursive = (node: CustomTreeNode) => {
       if (!node.children) return;
-      
+
       for (const child of node.children) {
         const hCurrent = node.value || 0;
         const hChild = child.value || 0;
@@ -249,13 +264,17 @@ export const useGameStore = create<GameState>()((set) => ({
     return { admissibilityViolations: violations };
   }),
 
-  updateTree: (newTree) => set((state) => {
-    if (state.isSimulating) return state;
-    
+  updateTree: (newTree, isSimulationUpdate = false) => set((state) => {
     // Ao atualizar a árvore, se estivermos no modo custom, 
     // salvamos como o novo "estado mestre" para persistência na sessão
-    return { 
+
+    // Se estivermos simulando, NÃO queremos resetar o gatilho, pois o updateTree é chamado passo a passo
+    // Só incrementamos o resetTrigger se NÃO estivermos simulando (edição manual/colagem)
+    const shouldReset = !isSimulationUpdate;
+
+    return {
       tree: newTree,
+      resetTrigger: shouldReset ? state.resetTrigger + 1 : state.resetTrigger,
       savedCustomTree: state.problemType === 'custom' ? newTree : state.savedCustomTree
     };
   }),
@@ -264,6 +283,7 @@ export const useGameStore = create<GameState>()((set) => ({
     if (state.isSimulating) return state;
 
     return produce(state, (draft) => {
+      draft.resetTrigger += 1;
       const findAndAdd = (node: CustomTreeNode) => {
         if (node.id === parentId) {
           node.children.push(newNode);
@@ -280,6 +300,7 @@ export const useGameStore = create<GameState>()((set) => ({
     if (nodeId === 'root') return state;
 
     return produce(state, (draft) => {
+      draft.resetTrigger += 1;
       const removeRecursive = (node: CustomTreeNode) => {
         const index = node.children.findIndex(c => c.id === nodeId);
         if (index !== -1) {
@@ -296,6 +317,7 @@ export const useGameStore = create<GameState>()((set) => ({
     if (state.isSimulating) return state;
 
     return produce(state, (draft) => {
+      draft.resetTrigger += 1;
       const updateRecursive = (node: CustomTreeNode) => {
         if (node.id === nodeId) {
           Object.assign(node, attributes);

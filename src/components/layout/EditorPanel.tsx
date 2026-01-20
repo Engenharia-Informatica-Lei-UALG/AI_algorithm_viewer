@@ -126,7 +126,6 @@ const JSON_EXAMPLES = {
               "value": 0,
               "isGoal": false,
               "children": [
-                { "id": "leaf-0-1", "name": "0", "value": 0, "isGoal": false, "children": [] },
                 { "id": "leaf-5-1", "name": "5", "value": 5, "isGoal": false, "children": [] },
                 { "id": "leaf-n3-1", "name": "-3", "value": -3, "isGoal": false, "children": [] }
               ]
@@ -138,21 +137,7 @@ const JSON_EXAMPLES = {
               "isGoal": false,
               "children": [
                 { "id": "leaf-3-1", "name": "3", "value": 3, "isGoal": false, "children": [] },
-                { "id": "leaf-3-2", "name": "3", "value": 3, "isGoal": false, "children": [] },
-                { "id": "leaf-n3-2", "name": "-3", "value": -3, "isGoal": false, "children": [] },
-                { "id": "leaf-0-2", "name": "0", "value": 0, "isGoal": false, "children": [] },
                 { "id": "leaf-2-1", "name": "2", "value": 2, "isGoal": false, "children": [] }
-              ]
-            },
-            {
-              "id": "L2-Max-1-3",
-              "name": "MAX",
-              "value": 0,
-              "isGoal": false,
-              "children": [
-                { "id": "leaf-n2-1", "name": "-2", "value": -2, "isGoal": false, "children": [] },
-                { "id": "leaf-3-3", "name": "3", "value": 3, "isGoal": false, "children": [] },
-                { "id": "leaf-5-2", "name": "5", "value": 5, "isGoal": false, "children": [] }
               ]
             }
           ]
@@ -171,7 +156,6 @@ const JSON_EXAMPLES = {
               "isGoal": false,
               "children": [
                 { "id": "leaf-2-2", "name": "2", "value": 2, "isGoal": false, "children": [] },
-                { "id": "leaf-5-3", "name": "5", "value": 5, "isGoal": false, "children": [] },
                 { "id": "leaf-n5-1", "name": "-5", "value": -5, "isGoal": false, "children": [] }
               ]
             },
@@ -182,72 +166,7 @@ const JSON_EXAMPLES = {
               "isGoal": false,
               "children": [
                 { "id": "leaf-0-3", "name": "0", "value": 0, "isGoal": false, "children": [] },
-                { "id": "leaf-1-1", "name": "1", "value": 1, "isGoal": false, "children": [] },
                 { "id": "leaf-5-4", "name": "5", "value": 5, "isGoal": false, "children": [] }
-              ]
-            },
-            {
-              "id": "L2-Max-2-3",
-              "name": "MAX",
-              "value": 0,
-              "isGoal": false,
-              "children": [
-                { "id": "leaf-1-2", "name": "1", "value": 1, "isGoal": false, "children": [] },
-                { "id": "leaf-n3-3", "name": "-3", "value": -3, "isGoal": false, "children": [] },
-                { "id": "leaf-0-4", "name": "0", "value": 0, "isGoal": false, "children": [] },
-                { "id": "leaf-n5-2", "name": "-5", "value": -5, "isGoal": false, "children": [] }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "L1-Min-3",
-          "name": "MIN",
-          "value": 0,
-          "isGoal": false,
-          "costToParent": 0,
-          "children": [
-            {
-              "id": "L2-Max-3-1",
-              "name": "MAX",
-              "value": 0,
-              "isGoal": false,
-              "children": [
-                { "id": "leaf-5-5", "name": "5", "value": 5, "isGoal": false, "children": [] },
-                { "id": "leaf-n3-4", "name": "-3", "value": -3, "isGoal": false, "children": [] },
-                { "id": "leaf-3-4", "name": "3", "value": 3, "isGoal": false, "children": [] }
-              ]
-            },
-            {
-              "id": "L2-Max-3-2",
-              "name": "MAX",
-              "value": 0,
-              "isGoal": false,
-              "children": [
-                { "id": "leaf-2-3", "name": "2", "value": 2, "isGoal": false, "children": [] },
-                { "id": "leaf-3-5", "name": "3", "value": 3, "isGoal": false, "children": [] },
-                { "id": "leaf-n3-5", "name": "-3", "value": -3, "isGoal": false, "children": [] },
-                { "id": "leaf-0-5", "name": "0", "value": 0, "isGoal": false, "children": [] }
-              ]
-            },
-            {
-              "id": "L2-Max-3-3",
-              "name": "MAX",
-              "value": 0,
-              "isGoal": false,
-              "children": [
-                { "id": "leaf-n1-1", "name": "-1", "value": -1, "isGoal": false, "children": [] },
-                { "id": "leaf-n2-2", "name": "-2", "value": -2, "isGoal": false, "children": [] },
-                { "id": "leaf-0-6", "name": "0", "value": 0, "isGoal": false, "children": [] },
-                { "id": "leaf-1-3", "name": "1", "value": 1, "isGoal": false, "children": [] },
-                { "id": "leaf-4-1", "name": "4", "value": 4, "isGoal": false, "children": [] },
-                { "id": "leaf-5-6", "name": "5", "value": 5, "isGoal": false, "children": [] },
-                { "id": "leaf-1-4", "name": "1", "value": 1, "isGoal": false, "children": [] },
-                { "id": "leaf-n1-2", "name": "-1", "value": -1, "isGoal": false, "children": [] },
-                { "id": "leaf-3-6", "name": "3", "value": 3, "isGoal": false, "children": [] },
-                { "id": "leaf-n3-6", "name": "-3", "value": -3, "isGoal": false, "children": [] },
-                { "id": "leaf-2-4", "name": "2", "value": 2, "isGoal": false, "children": [] },
-                { "id": "leaf-n2-3", "name": "-2", "value": -2, "isGoal": false, "children": [] }
               ]
             }
           ]

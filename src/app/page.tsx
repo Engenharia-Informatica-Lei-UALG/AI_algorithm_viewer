@@ -11,7 +11,7 @@ import Link from 'next/link'
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const { tree, problemType } = useGameStore()
+  const { tree, problemType, algorithm } = useGameStore()
   const [mounted, setMounted] = useState(false);
 
   const { visitedNodes, currentNodeId, stepForward, stepBack, fastForward } = useSimulation();
@@ -22,8 +22,8 @@ export default function Home() {
 
   // Memoize visxData to prevent unnecessary re-renders of the graph
   const visxData = useMemo(() =>
-    convertToVisx(tree, visitedNodes, currentNodeId, problemType),
-    [tree, visitedNodes, currentNodeId, problemType]
+    convertToVisx(tree, visitedNodes, currentNodeId, problemType, algorithm),
+    [tree, visitedNodes, currentNodeId, problemType, algorithm]
   );
 
   if (!mounted) return null;
@@ -89,14 +89,19 @@ export default function Home() {
   );
 }
 
-function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string | null, problemType: string): any {
-  // Gera uma chave única baseada no estado para comparação correta nos jogos
+function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string | null, problemType: string, algorithm: string | null): any {
+  // Para algoritmos que constroem árvores de busca (Minimax, MCTS, Alpha-Beta),
+  // o ID do nó é a chave única real, pois o mesmo estado pode aparecer em ramos diferentes.
+  const isTreeAlgo = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
+
   let stateKey = node.id;
-  
-  if (problemType === 'tictactoe' && node.boardState) {
-    stateKey = node.boardState.map((c: any) => c || '-').join('');
-  } else if (problemType === '8puzzle' && node.boardState) {
-    stateKey = node.boardState.join(',');
+
+  if (!isTreeAlgo) {
+    if (problemType === 'tictactoe' && node.boardState) {
+      stateKey = node.boardState.map((c: any) => c || '-').join('');
+    } else if (problemType === '8puzzle' && node.boardState) {
+      stateKey = node.boardState.join(',');
+    }
   }
 
   return {
@@ -111,6 +116,6 @@ function convertToVisx(node: any, visitedSet: Set<string>, currentNodeId: string
     alpha: node.alpha,
     beta: node.beta,
     isPruned: node.isPruned,
-    children: node.children ? node.children.map((c: any) => convertToVisx(c, visitedSet, currentNodeId, problemType)) : []
+    children: node.children ? node.children.map((c: any) => convertToVisx(c, visitedSet, currentNodeId, problemType, algorithm)) : []
   };
 }

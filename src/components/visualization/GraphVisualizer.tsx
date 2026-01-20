@@ -45,6 +45,9 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
   const [menuMode, setMenuMode] = useState<'node' | 'edge'>('node');
   const zoomRef = useRef<any>(null);
 
+  // Ref para guardar as posições anteriores dos nós e evitar "saltos" no re-render
+  const prevNodesRef = useRef<Map<string, GraphNode>>(new Map());
+
   useEffect(() => {
     if (zoomRef.current) {
       zoomRef.current.reset();
@@ -58,6 +61,7 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
     const traverse = (node: CustomTreeNode, parentName: string | null) => {
       if (!uniqueNodes.has(node.name)) {
+        const prevNode = prevNodesRef.current.get(node.name);
         uniqueNodes.set(node.name, {
           id: node.name,
           name: node.name,
@@ -66,8 +70,13 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
           isCurrent: node.isCurrent,
           isGoal: node.isGoal,
           isStart: parentName === null,
-          x: width / 2 + (Math.random() - 0.5) * 50,
-          y: height / 2 + (Math.random() - 0.5) * 50,
+          // Mantém a posição anterior se existir, senão gera aleatória
+          x: prevNode ? prevNode.x : width / 2 + (Math.random() - 0.5) * 50,
+          y: prevNode ? prevNode.y : height / 2 + (Math.random() - 0.5) * 50,
+          fx: prevNode ? prevNode.fx : null,
+          fy: prevNode ? prevNode.fy : null,
+          vx: prevNode ? prevNode.vx : 0,
+          vy: prevNode ? prevNode.vy : 0
         });
       } else {
         const existing = uniqueNodes.get(node.name)!;
@@ -97,12 +106,14 @@ function GraphVisualizer({ data, width, height, zoomResetTrigger }: GraphVisuali
 
     traverse(data, null);
 
-    const nodesArray = Array.from(uniqueNodes.values()).map(n => {
-      return n;
-    });
+    const nodesArray = Array.from(uniqueNodes.values());
+
+    // Atualiza o ref com os novos objetos (que serão mutados pelo D3)
+    // para que na próxima renderização possamos recuperar suas posições
+    prevNodesRef.current = new Map(nodesArray.map(n => [n.id, n]));
 
     return { nodes: nodesArray, links };
-  }, [data]); // width/height removidos para estabilidade
+  }, [data, width, height]); 
 
   // Lógica para seguir o nó ativo no Grafo
   useEffect(() => {

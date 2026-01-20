@@ -32,21 +32,6 @@ export function useSimulation() {
   const [history, setHistory] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Detecta mudanças no estado inicial do problema para reinicializar a simulação
-  // Para problemas customizados, queremos que a simulação reinicie se a estrutura da árvore mudar
-  // MAS, se a mudança for apenas visual (ex: isVisited), não devemos reiniciar.
-  // O useMemo abaixo tenta capturar apenas mudanças estruturais relevantes.
-  const problemStateJson = useMemo(() => {
-    if (problemType === 'custom') {
-      // Para árvores customizadas, qualquer mudança na estrutura ou valores (h, g)
-      // deve reiniciar o algoritmo para evitar cálculos baseados em dados obsoletos.
-      // Como a simulação não altera a árvore original em modo 'custom', isso é seguro.
-      return JSON.stringify(tree);
-    }
-    if (problemType === 'tictactoe' || problemType === '8puzzle') return JSON.stringify(tree.boardState);
-    return '';
-  }, [problemType, tree]);
-
   // Inicializa o problema e o algoritmo
   useEffect(() => {
     if (!algorithm) return;
@@ -89,7 +74,7 @@ export function useSimulation() {
     }
     searchAlgoRef.current = algoInstance;
 
-  }, [algorithm, resetTrigger, problemType, goalState, setNodesExplored, problemStateJson]);
+  }, [algorithm, resetTrigger, problemType, goalState, setNodesExplored, ticTacToeMaxPlayer, searchSettings]);
 
   useEffect(() => {
     setNodesExplored(currentStep);
@@ -112,11 +97,12 @@ export function useSimulation() {
 
     const node = algo.step();
     if (node) {
-      // Para problemas dinâmicos, atualizamos a árvore visual
-      if (problemType !== 'custom' && 'getTree' in algo) {
-        updateTree((algo as any).getTree());
+      // Para problemas dinâmicos ou algoritmos que constroem árvores visuais (Minimax, MCTS), atualizamos a árvore visual
+      const isTreeBasedAlgo = algorithm === 'minimax' || algorithm === 'alpha-beta' || algorithm === 'mcts';
+      if ((problemType !== 'custom' || isTreeBasedAlgo) && 'getTree' in algo) {
+        updateTree((algo as any).getTree(), true);
       }
-      
+
       // Atualiza estatísticas específicas do algoritmo (Fronteira, etc)
       if (algo.getAttributes) {
         setAlgorithmStats(algo.getAttributes());
@@ -170,7 +156,7 @@ export function useSimulation() {
     while (algo.getStatus() !== SearchStatus.COMPLETED && algo.getStatus() !== SearchStatus.FAILED && steps < maxSteps) {
       const node = algo.step();
       if (!node) break;
-      
+
       changed = true;
       lastNode = node;
       const nodeId = (node.state as any).key || (node.state as any).nodeId;

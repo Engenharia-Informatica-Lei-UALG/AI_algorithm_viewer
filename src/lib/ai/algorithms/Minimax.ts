@@ -18,16 +18,43 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
   protected initialize(): void {
     this.status = SearchStatus.RUNNING;
     this.nodesExplored = 0;
-    const initialState = this.problem.initialState as any;
-    this.tree = {
-      id: 'root',
-      name: 'Start',
-      children: [],
-      value: undefined,
-      boardState: initialState.board || initialState.boardState,
-    };
+
+    // Se o problema fornecer uma árvore (CustomTreeProblem), usamos a estrutura existente
+    // para não "apagar" o que o usuário definiu.
+    if ((this.problem as any).rootNode) {
+      this.tree = structuredClone((this.problem as any).rootNode);
+      this.cleanTree(this.tree!);
+    } else {
+      const initialState = this.problem.initialState as any;
+      this.tree = {
+        id: 'root',
+        name: 'Start',
+        children: [],
+        value: undefined,
+        boardState: initialState.board || initialState.boardState,
+      };
+    }
+
     // Inicializa o gerador que controlará a execução passo-a-passo
     this.iterator = this.minimaxGenerator(this.problem.initialState, -Infinity, Infinity, 0, this.tree!, 'root', 'root', true);
+  }
+
+  private cleanTree(node: CustomTreeNode) {
+    delete node.alpha;
+    delete node.beta;
+    delete node.isPruned;
+    delete node.isCutoffPoint;
+    delete node.pruningTriggeredBy;
+    delete node.isVisited;
+    // Opcional: manter valor se for custom, mas para simulação limpa talvez seja melhor limpar se for calculado
+    // Mas se for valor heurístico base (folha), devemos manter?
+    // Minimax sobrescreve visualNode.value.
+    // Se for 'custom', o value original é a heurística. O algoritmo sobrescreve com minimax value.
+    // Melhor não deletar 'value' aqui para não perder a input do usuário nas folhas.
+
+    if (node.children) {
+      node.children.forEach(c => this.cleanTree(c));
+    }
   }
 
   step(): SearchNode<S, A> | null {
@@ -43,12 +70,18 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
 
   private *minimaxGenerator(state: S, alpha: number, beta: number, depth: number, visualNode: CustomTreeNode, alphaId: string, betaId: string, isMax: boolean): Generator<SearchNode<S, A> | null, number, void> {
     this.nodesExplored++;
-    visualNode.alpha = alpha;
-    visualNode.beta = beta;
+
+    if (this.useAlphaBeta) {
+      visualNode.alpha = alpha;
+      visualNode.beta = beta;
+    }
+
+    visualNode.isVisited = true;
 
     // Yield para visualização do nó atual sendo visitado
+    // Usamos o ID visual como chave para garantir foco único na árvore
     yield {
-      state,
+      state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any,
       depth,
       pathCost: 0,
       heuristic: 0,
@@ -60,96 +93,166 @@ export class Minimax<S extends State, A extends Action> extends SearchAlgorithm<
     if (depth >= this.maxDepth || this.problem.isGoal(state)) {
       const utility = this.problem.getUtility ? this.problem.getUtility(state, 0) : 0;
       visualNode.value = utility;
-      visualNode.alpha = utility;
-      visualNode.beta = utility;
+      // Em nós folha, alpha e beta tornam-se o próprio valor para visualização
+      if (this.useAlphaBeta) {
+        visualNode.alpha = utility;
+        visualNode.beta = utility;
+      }
+
+      yield {
+        state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any,
+        depth,
+        pathCost: 0,
+        heuristic: 0,
+        action: null,
+        parent: null,
+        getScore: () => 0
+      };
       return utility;
     }
 
     let value = isMax ? -Infinity : Infinity;
     const actions = this.problem.getActions(state);
-    
+
     // Variáveis para rastrear a origem do alpha/beta localmente
-    let currentAlphaId = alphaId; 
+    let currentAlphaId = alphaId;
     let currentBetaId = betaId;
 
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const nextState = this.problem.getResult(state, action);
       const nextStateAny = nextState as any;
-      
-      const childVisualNode: CustomTreeNode = {
-        id: `${visualNode.id}-${action.name}`,
-        name: action.name,
-        children: [],
-        boardState: nextStateAny.board || nextStateAny.boardState,
-      };
-      visualNode.children.push(childVisualNode);
+
+      // Criar ID único. No modo custom, usamos o ID real do nó para manter a ligação.
+      // Em jogos, usamos o caminho hierárquico.
+      const childId = nextStateAny.nodeId || `${visualNode.id}-${action.name.replace(/\s+/g, '_')}`;
+
+      // No modo custom, tentamos encontrar se o filho já existe na árvore base
+      // para não duplicar ou apagar o que o usuário definiu.
+      let childVisualNode = visualNode.children.find(c => c.id === childId || c.id === (nextStateAny.nodeId || ''));
+
+      if (!childVisualNode) {
+        childVisualNode = {
+          id: childId,
+          name: action.name,
+          children: [],
+          boardState: nextStateAny.board || nextStateAny.boardState,
+          isVisited: false,
+        };
+        visualNode.children.push(childVisualNode);
+      }
 
       // Chamada recursiva via yield* para manter o controle do gerador
       const childValue: number = yield* this.minimaxGenerator(
-        nextState, 
-        alpha, 
-        beta, 
-        depth + 1, 
-        childVisualNode, 
-        isMax ? currentAlphaId : alphaId, 
-        isMax ? betaId : currentBetaId,
+        nextState,
+        alpha,
+        beta,
+        depth + 1,
+        childVisualNode!,
+        currentAlphaId,
+        currentBetaId,
         !isMax
       );
 
       if (isMax) {
         if (childValue > value) {
           value = childValue;
-          visualNode.alpha = value;
-          currentAlphaId = visualNode.id; // Atualiza quem define o Alpha
+          visualNode.value = value;
+
+          if (this.useAlphaBeta) {
+            if (value > alpha) {
+              alpha = value;
+              visualNode.alpha = alpha;
+              currentAlphaId = childVisualNode!.id;
+            }
+          }
+          // Yield de atualização (valor ou alpha)
+          yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
         }
       } else {
         if (childValue < value) {
           value = childValue;
-          visualNode.beta = value;
-          currentBetaId = visualNode.id; // Atualiza quem define o Beta
+          visualNode.value = value;
+
+          if (this.useAlphaBeta) {
+            if (value < beta) {
+              beta = value;
+              visualNode.beta = beta;
+              currentBetaId = childVisualNode!.id;
+            }
+          }
+          // Yield de atualização (valor ou beta)
+          yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
         }
       }
 
       if (this.useAlphaBeta) {
         if (isMax) {
           if (value >= beta) {
-            this.handlePruning(visualNode, value, betaId, actions, i + 1);
+            this.handlePruning(state, visualNode, value, betaId, actions, i + 1);
+            yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
             return value; // Beta cutoff
           }
-          alpha = Math.max(alpha, value);
-          visualNode.alpha = alpha;
         } else {
           if (value <= alpha) {
-            this.handlePruning(visualNode, value, alphaId, actions, i + 1);
+            this.handlePruning(state, visualNode, value, alphaId, actions, i + 1);
+            yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
             return value; // Alpha cutoff
           }
-          beta = Math.min(beta, value);
-          visualNode.beta = beta;
         }
+      } else {
+        // Se for minimax puro ou se o valor não melhorou, ainda assim retornamos o foco para o pai
+        yield { state: { ...state, key: visualNode.id, nodeId: visualNode.id } as any, depth, pathCost: 0, heuristic: 0, action: null, parent: null, getScore: () => 0 };
       }
     }
     visualNode.value = value;
     return value;
   }
 
-  private handlePruning(visualNode: CustomTreeNode, value: number, triggerId: string, actions: A[], startIndex: number) {
+  private handlePruning(state: S, visualNode: CustomTreeNode, value: number, triggerId: string, actions: A[], startIndex: number) {
     visualNode.value = value;
     visualNode.isCutoffPoint = true;
     visualNode.pruningTriggeredBy = triggerId;
 
     for (let j = startIndex; j < actions.length; j++) {
-      visualNode.children.push({
-        id: `${visualNode.id}-${actions[j].name}-pruned`,
-        name: actions[j].name,
-        children: [],
-        isPruned: true,
-        pruningTriggeredBy: triggerId
-      });
+      const action = actions[j];
+      const nextState = this.problem.getResult(state, action);
+      const nextStateAny = nextState as any;
+
+      // Tenta encontrar o nó filho correspondente
+      // Prioridade: ID explícito (custom) ou gerado (dinâmico)
+      const targetId = nextStateAny.nodeId || `${visualNode.id}-${action.name.replace(/\s+/g, '_')}`;
+
+      const existingChild = visualNode.children.find(c =>
+        c.id === targetId ||
+        c.id === nextStateAny.nodeId || // Fallback para ID direto
+        c.name === action.name // Fallback final (menos seguro)
+      );
+
+      if (existingChild) {
+        // Se o nó já existe, marcamos ele como podado
+        existingChild.isPruned = true;
+        existingChild.pruningTriggeredBy = triggerId;
+      } else {
+        // Se não existe (árvore dinâmica não expandida), criamos o nó fantasma
+        const prunedId = `${visualNode.id}-${action.name.replace(/\s+/g, '_')}-pruned`;
+        if (!visualNode.children.some(c => c.id === prunedId)) {
+          visualNode.children.push({
+            id: prunedId,
+            name: action.name,
+            children: [],
+            isPruned: true,
+            pruningTriggeredBy: triggerId,
+            isVisited: false,
+            boardState: undefined
+          });
+        }
+      }
     }
   }
 
   public getTree(): CustomTreeNode {
-    return this.tree!;
+    // Retornamos um clone profundo que preserva Infinity/-Infinity
+    return structuredClone(this.tree!);
   }
 }
