@@ -8,6 +8,10 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
 ![Bun](https://img.shields.io/badge/Bun-1.0-orange?style=flat-square&logo=bun)
 
+<p align="center">
+  <img src="assets/presentacion.gif" alt="Algorithm AI Labs Demo" width="800">
+</p>
+
 ## ✨ Funcionalidades
 
 - **Visualização Dinâmica:** Árvores de busca e grafos interativos com suporte a zoom e pan (Force-Directed Layout para grafos).
@@ -15,15 +19,30 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
   - Adicione ou remova nós diretamente no gráfico ou no painel lateral.
   - Edite nomes, valores de heurística (`h`) e custos de arestas (`g`) com um clique.
   - Configure estados iniciais para problemas clássicos como Tic-Tac-Toe e 8-Puzzle.
+  <p align="center">
+    <img src="assets/edit_arvore.gif" alt="Editor de Árvores" width="600">
+  </p>
   - **Importação Inteligente via IA:** Transforme desenhos de grafos ou tabuleiros em estruturas digitais interativas usando Visão Computacional (suporte a Gemini, OpenAI, Anthropic).
+  <p align="center">
+    <img src="assets/upload_exemplos.gif" alt="Importação via IA" width="600">
+  </p>
 - **Simulação Passo a Passo:** 
   - Controle total sobre a execução do algoritmo (Avançar, Voltar, Fast Forward).
   - Destaque visual do nó atual e do histórico de exploração.
   - **Foco Automático:** Acompanhamento automático do nó ativo durante a simulação.
+  <p align="center">
+    <img src="assets/iterative.gif" alt="Simulação Iterativa" width="600">
+  </p>
 - **Algoritmos Suportados:**
   - Busca Cega: BFS, DFS, UCS, IDS.
   - Busca Informada: A*, Greedy Search, IDA*.
   - Jogos/Adversários: Minimax, Alpha-Beta Pruning, MCTS.
+  <p align="center">
+    <img src="assets/minimax.gif" alt="Minimax Visualization" width="600">
+  </p>
+  <p align="center">
+    <img src="assets/json.gif" alt="Data Structure Visualization" width="600">
+  </p>
 - **Análise de Heurística:** Verificação de admissibilidade em tempo real para problemas customizados, com destaque visual de violações.
 - **Internacionalização (i18n):** Suporte completo para Inglês (EN) e Português (PT).
 
