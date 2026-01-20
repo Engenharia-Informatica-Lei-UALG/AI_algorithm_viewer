@@ -549,7 +549,7 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
     updateNodeAttributes(currentNode.id, { boardState: newBoard });
   };
 
-  const showHeuristic = algorithm && !['bfs', 'dfs', 'ids', 'ucs', 'minimax', 'alpha-beta'].includes(algorithm);
+  const showHeuristic = !!algorithm && !(['bfs', 'dfs', 'ids', 'ucs', 'minimax', 'alpha-beta'] as any[]).includes(algorithm);
   const showAlphaBeta = algorithm === 'minimax' || algorithm === 'alpha-beta';
   const isMCTS = algorithm === 'mcts';
 

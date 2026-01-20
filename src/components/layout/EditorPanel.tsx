@@ -215,7 +215,7 @@ function StatsTabContent() {
   };
 
   /** Determine if the current algorithm belongs to the search category. */
-  const isSearchAlgo = algorithm && ['bfs', 'dfs', 'ids', 'ucs', 'greedy', 'astar', 'idastar'].includes(algorithm);
+  const isSearchAlgo = !!algorithm && (['bfs', 'dfs', 'ids', 'ucs', 'greedy', 'astar', 'idastar'] as any[]).includes(algorithm);
 
   const displayStats = { ...algorithmStats };
   if (isSearchAlgo) {

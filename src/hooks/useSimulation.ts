@@ -116,7 +116,7 @@ export function useSimulation() {
     }
 
     const node = algo.step();
-    const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm || '');
+    const isTreeBasedAlgo = !!algorithm && (['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'] as any[]).includes(algorithm);
 
     // Always update tree for algorithms that manage their own internal visual state
     if (isTreeBasedAlgo && 'getTree' in algo) {
