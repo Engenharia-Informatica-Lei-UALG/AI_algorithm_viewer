@@ -120,7 +120,12 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
                     >
                       {/* Arrow positioned over the button */}
                       <div className="absolute -top-2 left-8 w-4 h-4 bg-amber-600 rotate-45 border-t-2 border-l-2 border-white/40" />
-                      <MousePointer2 size={14} className="animate-bounce" />
+                      <motion.span
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      >
+                        <MousePointer2 size={14} />
+                      </motion.span>
                       {t('stats_tab.speed_hint')}
                     </motion.div>
                   )}

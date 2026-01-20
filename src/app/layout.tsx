@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   title: "Algorithm AI Lab",
   description: "Interactive AI Algorithm Visualizer",
   icons: {
-    icon: '/icon.gif',
+    icon: '/animated-icon.gif',
+    shortcut: '/animated-icon.gif',
+    apple: '/animated-icon.gif',
   },
 };
 
@@ -35,6 +37,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <link rel="icon" href="/animated-icon.gif" type="image/gif" />
         <ClientI18nProvider>
           {children}
         </ClientI18nProvider>
