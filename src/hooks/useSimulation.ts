@@ -116,7 +116,7 @@ export function useSimulation() {
     }
 
     const node = algo.step();
-    const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm as string);
+    const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm || '');
 
     // Always update tree for algorithms that manage their own internal visual state
     if (isTreeBasedAlgo && 'getTree' in algo) {
@@ -161,10 +161,10 @@ export function useSimulation() {
     if (isSimulating) {
       const interval = setInterval(() => {
         executeStepRef.current();
-      }, searchSettings.simulationSpeed);
+      }, searchSettings.simulationSpeed || 500);
       return () => clearInterval(interval);
     }
-  }, [isSimulating]);
+  }, [isSimulating, searchSettings.simulationSpeed]);
 
   const visitedNodes = useMemo(() => new Set(history.slice(0, currentStep)), [history, currentStep]);
   const currentNodeId = useMemo(() => history[currentStep - 1] || null, [history, currentStep]);
@@ -221,4 +221,3 @@ export function useSimulation() {
     fastForward
   };
 }
-
