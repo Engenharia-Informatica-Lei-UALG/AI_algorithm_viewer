@@ -412,10 +412,19 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
         // Somamos 50 devido ao offset do <Group top={50} left={50}>
         // Usamos scale atual para manter a consistência do zoom
         const currentMatrix = zoomRef.current.transformMatrix;
+        const scale = currentMatrix.scaleX;
 
-        zoomRef.current.translateTo({
-          x: activeNode.x + 50,
-          y: activeNode.y + 50
+        // Calcula a posição para centralizar o nó
+        const tx = (width / 2) - (activeNode.x + 50) * scale;
+        const ty = (height / 2) - (activeNode.y + 50) * scale;
+
+        zoomRef.current.setTransformMatrix({
+          scaleX: scale,
+          scaleY: scale,
+          translateX: tx,
+          translateY: ty,
+          skewX: 0,
+          skewY: 0,
         });
       }
     }
