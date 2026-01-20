@@ -41,7 +41,9 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
   private stack: SearchNode<S, A>[] = [];
   private visualRoot: CustomTreeNode | null = null;
   private visualNodeMap: Map<SearchNode<S, A>, CustomTreeNode> = new Map();
+  private currentVisualNode: CustomTreeNode | null = null;
   private maxIterations: number;
+  private isResetting: boolean = false;
 
   /**
    * Initializes a new IDAStar instance.
@@ -61,7 +63,21 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
     this.nodesExplored = 0;
     this.status = SearchStatus.RUNNING;
     this.threshold = this.problem.getHeuristic(this.problem.initialState);
+    this.visualRoot = null;
+    this.currentVisualNode = null;
+    this.isResetting = false;
     this.prepareIteration();
+  }
+
+  /**
+   * Resets visual flags for the entire tree to prepare for a new iteration.
+   */
+  private resetVisualTree(node: CustomTreeNode): void {
+    node.isVisited = false;
+    node.isCurrent = false;
+    node.isPruned = false;
+    node.pruningTriggeredBy = undefined;
+    node.children.forEach(child => this.resetVisualTree(child));
   }
 
   /**
@@ -82,15 +98,31 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
     this.stack = [rootNode];
     this.nextThreshold = Infinity;
 
-    this.visualRoot = {
-      id: `idastar-t${this.threshold}-root`,
-      name: `Start (limit: ${this.threshold})`,
-      children: [],
-      boardState: (rootState as any).board,
-      value: h
-    };
+    if (!this.visualRoot) {
+      const p = this.problem as any;
+      if (p.rootNode) {
+        this.visualRoot = structuredClone(p.rootNode);
+      } else {
+        const rootState = this.problem.initialState;
+        this.visualRoot = {
+          id: 'root',
+          name: `Start`,
+          children: [],
+          boardState: (rootState as any).board,
+          value: h
+        };
+      }
+    }
+
+    if (this.visualRoot) {
+      this.resetVisualTree(this.visualRoot);
+    }
+
+    this.currentVisualNode = null;
     this.visualNodeMap.clear();
-    this.visualNodeMap.set(rootNode, this.visualRoot);
+    if (this.visualRoot) {
+      this.visualNodeMap.set(rootNode, this.visualRoot);
+    }
   }
 
   /**
@@ -115,15 +147,23 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
       }
       this.threshold = this.nextThreshold;
       this.prepareIteration();
-      return null;
+      // Proceed to pop the first node of new iteration
     }
 
     const node = this.stack.pop()!;
     const f = node.getScore();
 
+    // Update visual state: Clear previous focus
+    if (this.currentVisualNode) {
+      this.currentVisualNode.isCurrent = false;
+    }
+
+    // Set new focus
     const visualNode = this.visualNodeMap.get(node);
     if (visualNode) {
       visualNode.isVisited = true;
+      visualNode.isCurrent = true; // Triggers purple highlight
+      this.currentVisualNode = visualNode;
     }
 
     if (f > this.threshold) {
@@ -140,6 +180,7 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
 
     if (this.problem.isGoal(node.state)) {
       this.status = SearchStatus.COMPLETED;
+      if (visualNode) visualNode.isGoal = true;
       return node;
     }
 
@@ -156,16 +197,23 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
 
       const parentVisual = this.visualNodeMap.get(node);
       if (parentVisual) {
-        const childVisual: CustomTreeNode = {
-          id: `${parentVisual.id}-${action.name}`,
-          name: action.name,
-          value: h,
-          costToParent: this.problem.getCost(node.state, action, nextState),
-          children: [],
-          boardState: (nextState as any).board,
-          isGoal: this.problem.isGoal(nextState)
-        };
-        parentVisual.children.push(childVisual);
+        const targetNodeId = (action as any).targetNodeId;
+        const childId = targetNodeId || `${parentVisual.id}-${action.name.replace(/\s+/g, '_')}`;
+        let childVisual = parentVisual.children.find(c => c.id === childId);
+
+        if (!childVisual) {
+          childVisual = {
+            id: childId,
+            name: action.name,
+            value: h,
+            costToParent: this.problem.getCost(node.state, action, nextState),
+            children: [],
+            boardState: (nextState as any).board,
+            isGoal: this.problem.isGoal(nextState)
+          };
+          parentVisual.children.push(childVisual);
+        }
+
         this.visualNodeMap.set(child, childVisual);
       }
     }
@@ -193,4 +241,3 @@ export class IDAStar<S extends State, A extends Action> extends SearchAlgorithm<
     };
   }
 }
-

@@ -24,7 +24,7 @@ interface VisualizationPanelProps {
  */
 export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, onFastForwardAction }: VisualizationPanelProps) {
   const { t } = useTranslation()
-  const { algorithm, isSimulating, reset, nodesExplored, problemType, followActiveNode, setFollowActiveNode } = useGameStore()
+  const { algorithm, isSimulating, reset, nodesExplored, problemType, followActiveNode, setFollowActiveNode, algorithmStats } = useGameStore()
   const [viewMode, setViewMode] = useState<'tree' | 'graph'>('tree')
   const [showHint, setShowHint] = useState(false)
   const [zoomResetTrigger, setZoomResetTrigger] = useState(0)
@@ -155,11 +155,33 @@ export function VisualizationPanel({ visxData, onStepAction, onStepBackAction, o
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t('algorithm')}:</span>
-              <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
-                {algorithm ? algorithm.toUpperCase() : "---"}
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t('algorithm')}:</span>
+                <span className="text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
+                  {algorithm ? algorithm.toUpperCase() : "---"}
+                </span>
+              </div>
+
+              {/* Iteration / Limit Badge */}
+              {algorithmStats && (algorithmStats["Current Depth Limit"] !== undefined || algorithmStats["Current f-limit (Threshold)"] !== undefined) && (
+                <div className="flex items-center gap-3 animate-in zoom-in-50 duration-300">
+                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-black">
+                    {algorithmStats["Current Depth Limit"] !== undefined ? t('stats_tab.depth_limit') : t('stats_tab.f_limit')}:
+                  </span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={String(algorithmStats["Current Depth Limit"] ?? algorithmStats["Current f-limit (Threshold)"])}
+                      initial={{ scale: 1.4, color: "#f59e0b" }}
+                      animate={{ scale: 1, color: "#b45309" }}
+                      transition={{ type: "spring", stiffness: 500, damping: 12 }}
+                      className="text-lg font-mono font-black bg-amber-500/10 px-5 py-2 rounded-xl border-2 border-amber-500/30 shadow-md"
+                    >
+                      {algorithmStats["Current Depth Limit"] ?? algorithmStats["Current f-limit (Threshold)"]}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
           </div>
         </div>

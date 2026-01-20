@@ -40,7 +40,9 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
   private stack: SearchNode<S, A>[] = [];
   private visualRoot: CustomTreeNode | null = null;
   private visualNodeMap: Map<SearchNode<S, A>, CustomTreeNode> = new Map();
+  private currentVisualNode: CustomTreeNode | null = null;
   private maxAllowedDepth: number;
+  private isResetting: boolean = false;
 
   /**
    * Initializes a new IDS instance.
@@ -60,7 +62,22 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     this.currentLimit = 0;
     this.nodesExplored = 0;
     this.status = SearchStatus.RUNNING;
+    this.visualRoot = null;
+    this.currentVisualNode = null;
+    this.isResetting = false;
     this.prepareIteration();
+  }
+
+  /**
+   * Resets visual flags for the entire tree to prepare for a new iteration.
+   * Keeps the structure (children) intact so the tree doesn't "collapse" visually.
+   */
+  private resetVisualTree(node: CustomTreeNode): void {
+    node.isVisited = false;
+    node.isCurrent = false;
+    node.isPruned = false;
+    node.pruningTriggeredBy = undefined;
+    node.children.forEach(child => this.resetVisualTree(child));
   }
 
   /**
@@ -71,14 +88,29 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     const rootNode = new NodeImpl<S, A>(rootState, null, null, 0, 0, 0);
     this.stack = [rootNode];
 
-    this.visualRoot = {
-      id: `ids-l${this.currentLimit}-root`,
-      name: `Start (Limit: ${this.currentLimit})`,
-      children: [],
-      boardState: (rootState as any).board,
-    };
+    if (!this.visualRoot) {
+      const p = this.problem as any;
+      if (p.rootNode) {
+        this.visualRoot = structuredClone(p.rootNode);
+      } else {
+        this.visualRoot = {
+          id: 'root',
+          name: `Start`,
+          children: [],
+          boardState: (rootState as any).board,
+        };
+      }
+    }
+
+    if (this.visualRoot) {
+      this.resetVisualTree(this.visualRoot);
+    }
+
+    this.currentVisualNode = null;
     this.visualNodeMap.clear();
-    this.visualNodeMap.set(rootNode, this.visualRoot);
+    if (this.visualRoot) {
+      this.visualNodeMap.set(rootNode, this.visualRoot);
+    }
   }
 
   /**
@@ -91,6 +123,8 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
   step(): SearchNode<S, A> | null {
     if (this.status !== SearchStatus.RUNNING) return null;
 
+    // If we are in the "reset" phase, prepare the next iteration and immediately proceed
+    // so the UI updates with the new iteration state (root visited, new limit text).
     if (this.stack.length === 0) {
       this.currentLimit++;
       if (this.currentLimit > this.maxAllowedDepth) {
@@ -98,15 +132,29 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
         return null;
       }
       this.prepareIteration();
-      return null;
+      // Proceed to pop the first node of the new iteration
     }
 
     const node = this.stack.pop()!;
     this.nodesExplored++;
     this.currentDepth = node.depth;
 
+    // Update visual state: Clear previous focus
+    if (this.currentVisualNode) {
+      this.currentVisualNode.isCurrent = false;
+    }
+
+    // Set new focus
+    const visualNode = this.visualNodeMap.get(node);
+    if (visualNode) {
+      visualNode.isVisited = true;
+      visualNode.isCurrent = true; // This triggers the purple highlight in TreeGraph.tsx
+      this.currentVisualNode = visualNode;
+    }
+
     if (this.problem.isGoal(node.state)) {
       this.status = SearchStatus.COMPLETED;
+      if (visualNode) visualNode.isGoal = true;
       return node;
     }
 
@@ -129,14 +177,21 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
 
         const parentVisual = this.visualNodeMap.get(node);
         if (parentVisual) {
-          const childVisual: CustomTreeNode = {
-            id: `${parentVisual.id}-${action.name}`,
-            name: action.name,
-            children: [],
-            boardState: (nextState as any).board,
-            isGoal: this.problem.isGoal(nextState)
-          };
-          parentVisual.children.push(childVisual);
+          const targetNodeId = (action as any).targetNodeId;
+          const childId = targetNodeId || `${parentVisual.id}-${action.name.replace(/\s+/g, '_')}`;
+          let childVisual = parentVisual.children.find(c => c.id === childId);
+
+          if (!childVisual) {
+            childVisual = {
+              id: childId,
+              name: action.name,
+              children: [],
+              boardState: (nextState as any).board,
+              isGoal: this.problem.isGoal(nextState)
+            };
+            parentVisual.children.push(childVisual);
+          }
+
           this.visualNodeMap.set(child, childVisual);
         }
       }
@@ -165,4 +220,3 @@ export class IDS<S extends State, A extends Action> extends SearchAlgorithm<S, A
     };
   }
 }
-

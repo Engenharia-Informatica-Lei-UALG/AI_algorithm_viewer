@@ -158,7 +158,9 @@ const resources = {
         "max_real_depth": "Max Real Depth",
         "total_children": "Total Children",
         "execution_details": "Execution Details",
-        "waiting": "(Waiting for simulation)"
+        "waiting": "(Waiting for simulation)",
+        "depth_limit": "Current Iteration (Depth)",
+        "f_limit": "Current Iteration (f-Limit)"
       },
       "upload_tab": {
         "title": "Upload Image / Diagram",
@@ -330,7 +332,9 @@ const resources = {
         "max_real_depth": "Prof. Máxima Real",
         "total_children": "Total de Filhos",
         "execution_details": "Detalhes da Execução",
-        "waiting": "(Aguardando simulação)"
+        "waiting": "(Aguardando simulação)",
+        "depth_limit": "Iteração Atual (Prof.)",
+        "f_limit": "Iteração Atual (f-Limit)"
       },
       "upload_tab": {
         "title": "Upload de Imagem / Diagrama",

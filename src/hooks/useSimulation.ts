@@ -116,12 +116,14 @@ export function useSimulation() {
     }
 
     const node = algo.step();
-    if (node) {
-      const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm as string);
-      if ((problemType !== 'custom' || isTreeBasedAlgo) && 'getTree' in algo) {
-        updateTree((algo as any).getTree(), true);
-      }
+    const isTreeBasedAlgo = ['minimax', 'alpha-beta', 'mcts', 'ids', 'idastar'].includes(algorithm as string);
 
+    // Always update tree for algorithms that manage their own internal visual state
+    if (isTreeBasedAlgo && 'getTree' in algo) {
+      updateTree((algo as any).getTree(), true);
+    }
+
+    if (node) {
       if (algo.getAttributes) {
         setAlgorithmStats(algo.getAttributes());
       }
@@ -130,6 +132,12 @@ export function useSimulation() {
       if (nodeId) {
         setHistory(prev => [...prev, nodeId]);
         setCurrentStep(c => c + 1);
+      }
+    } else if (isTreeBasedAlgo) {
+      // For iterative algorithms, we might have a "reset" frame with no new node
+      // but we still want to show the state of the iteration.
+      if (algo.getAttributes) {
+        setAlgorithmStats(algo.getAttributes());
       }
     }
   };
