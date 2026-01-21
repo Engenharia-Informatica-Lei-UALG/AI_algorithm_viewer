@@ -7,6 +7,7 @@ Um laboratório interativo para visualização e experimentação de algoritmos 
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
 ![Bun](https://img.shields.io/badge/Bun-1.0-orange?style=flat-square&logo=bun)
+![Docker](https://img.shields.io/badge/Docker-24.0-blue?style=flat-square&logo=docker)
 
 <p align="center">
   <img src="assets/presentacion.gif" alt="Algorithm AI Labs Demo" width="800">
@@ -81,6 +82,10 @@ src/
 
 ## 🛠️ Instalação e Execução
 
+Você pode rodar o projeto localmente usando **Bun/Node** ou via **Docker**.
+
+### Opção 1: Instalação Local (Bun/Node)
+
 1. Clone o repositório:
    ```bash
    git clone https://github.com/kanekitakitos/AI_algorithm_viewer.git
@@ -99,6 +104,22 @@ src/
    ```
 
 4. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
+
+### Opção 2: Execução via Docker 🐳
+
+Se preferir não instalar dependências locais, você pode usar o Docker. A imagem é otimizada para produção (standalone).
+
+1. Construa a imagem:
+   ```bash
+   docker build -t ai-algorithm-viewer .
+   ```
+
+2. Execute o container:
+   ```bash
+   docker run -p 3000:3000 ai-algorithm-viewer
+   ```
+
+3. Acesse a aplicação em [http://localhost:3000](http://localhost:3000).
 
 ## 🙏 Agradecimentos
 
