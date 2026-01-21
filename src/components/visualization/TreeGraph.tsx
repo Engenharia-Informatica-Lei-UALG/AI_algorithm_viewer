@@ -446,13 +446,15 @@ export default function TreeGraph({ data, width, height, zoomResetTrigger }: Tre
    * for centering and camera-following logic.
    */
   const { layoutRoot, treeWidth, treeHeight } = useMemo(() => {
-    const h = hierarchy(data);
+    // Cast data to CustomTreeNode to satisfy D3's strict type requirements
+    const h = hierarchy<CustomTreeNode>(data as unknown as CustomTreeNode);
     const tw = Math.max(h.leaves().length * minNodeWidth, minNodeWidth);
     const th = Math.max(h.height * minNodeHeight, minNodeHeight);
     const treeLayout = d3.tree<CustomTreeNode>()
       .size([tw, th])
       .separation((a, b) => (a.parent === b.parent ? 1 : 1.5));
-    return { layoutRoot: treeLayout(h), treeWidth: tw, treeHeight: th };
+    // Cast to 'any' to resolve visx vs d3 type mismatch
+    return { layoutRoot: treeLayout(h as any), treeWidth: tw, treeHeight: th };
   }, [data, minNodeWidth, minNodeHeight]);
 
   /**

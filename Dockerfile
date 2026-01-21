@@ -36,9 +36,9 @@ USER bun
 COPY --from=builder /app/public ./public
 
 # Copy the standalone build
-# Next.js standalone output puts everything needed in .next/standalone
-COPY --from=builder --chown=bun:bun /app/.next/standalone ./
-COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
+# Next.js standalone output puts everything needed in .output/standalone
+COPY --from=builder --chown=bun:bun /app/.output/standalone ./
+COPY --from=builder --chown=bun:bun /app/.output/static ./.output/static
 
 EXPOSE 3000
 
